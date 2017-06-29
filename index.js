@@ -21,16 +21,6 @@ var db = [{
   maxPlayers: 4
 }];
 
-app.listen(PORT, function () {
-  // Callback triggered when server is successfully listening. Hurray!
-  console.log('Example app listening on port ' + PORT);
-});
-
-app.get('/', function(req, res) {
-  res.send('Ngrok is working! Path Hit: ' + req.url);
-});
-
-
 function getFreeSlots() {
   return [{
     text: '14:20 Uhr',
