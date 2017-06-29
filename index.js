@@ -66,7 +66,8 @@ app.post('/kickr/reserve', function(req, res) {
           text: "Yes ma'am!",
           type: 'button',
           value: 'yes',
-          style: 'primary'
+          style: 'primary',
+          response_url: process.env.HOST + '/kickr/join/' + db.length
         }]
       }]
     });
@@ -79,9 +80,10 @@ app.post('/kickr/reserve', function(req, res) {
 });
 
 app.post('/kickr/join', function(req, res) {
-  console.log(req.body);
+  const json = JSON.parse(req.body.payload);
   res.json({
     response_type: 'in_channel',
-    text: 'Its 80 degrees right now.'
+    replace_original: false,
+    text: '<@' + json.user.id + '|' + json.user.name + '> nimmt an ... Teil!!'
   });
 });
