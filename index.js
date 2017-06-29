@@ -15,15 +15,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
 var PORT=4390;
 
 var db = [{
-  id: 1,
   time: '14:00',
   createdBy: 'joa',
   players: ['rene', 'stefan']
 }];
 
 app.listen(PORT, function () {
-  //Callback triggered when server is successfully listening. Hurray!
-  console.log("Example app listening on port " + PORT);
+  // Callback triggered when server is successfully listening. Hurray!
+  console.log('Example app listening on port ' + PORT);
 });
 
 app.get('/', function(req, res) {
@@ -31,61 +30,58 @@ app.get('/', function(req, res) {
 });
 
 app.post('/kickr/reserve', function(req, res) {
-  
-  console.log(req.body.text);
 
-  // TODO Parse
   var requiredMatchTime = moment(req.body.text, 'hh:mm');
 
-  const roomReserved = db.find(match => {
+  const match = db.find(match => {
 
     const matchStart = moment(match.time, 'hh:mm');
     const matchEnd = moment(matchStart).add(20, 'minutes');
     const isReserved = requiredMatchTime.isBetween(matchStart, matchEnd) || requiredMatchTime.isSame(matchStart);
 
-    return isReserved;
+    return isReserved ? match : null;
   });
 
-  if (!roomReserved) {
+  if (!match) {
+
+    db.push({
+      time: req.body.text,
+      createdBy: req.body.user_name,
+      players: [
+        req.body.user_name
+      ]
+    });
+
     res.json({
-      "response_type": "in_channel",
-       "text": "Kickrbot reserved a game at 14:00! Wanna join?",
-        "attachments": [
-            {
-                "text": "Sure you wanna go down in hell?",
-                "fallback": "You are unable to choose a game",
-                "callback_id": "wopr_game",
-                "color": "#3AA3E3",
-                "attachment_type": "default",
-                "actions": [
-                    {
-                        "name": "yes",
-                        "text": "Yes ma'am!",
-                        "type": "button",
-                        "value": "yes",
-              "style": "primary"
-                    }
-                ]
-            }
-        ]
+      response_type: 'in_channel',
+      text: '<@' + req.body.user_id + '|' + req.body.user_name+ '> reserved a game at ' + req.body.text + '! Wanna join?',
+      attachments: [{
+        text: 'Sure you wanna go down in hell?',
+        fallback: 'You are unable to choose a game',
+        callback_id: db.length,
+        color: '#3AA3E3',
+        attachment_type: 'default',
+        actions: [{
+          name: 'yes',
+          text: "Yes ma'am!",
+          type: 'button',
+          value: 'yes',
+          style: 'primary'
+        }]
+      }]
     });
   } else {
-    res.json({
-      'text': 'Sorry, Raum ist nicht frei ;('
-    });
+    let text = 'Sorry, Raum ist nicht frei ;(';
+    text += match.createdBy + ' spielt von ';
+
+    res.json({ text });
   }
 });
 
 app.post('/kickr/join', function(req, res) {
   console.log(req.body);
-
   res.json({
-    "response_type": "in_channel",
-    "text": "It's 80 degrees right now.",
-    "attachments": [
-        {
-            "text":"Partly cloudy today and tomorrow"
-        }
-    ]
+    response_type: 'in_channel',
+    text: 'Its 80 degrees right now.'
   });
 });
