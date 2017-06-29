@@ -30,6 +30,17 @@ app.get('/', function(req, res) {
   res.send('Ngrok is working! Path Hit: ' + req.url);
 });
 
+
+function getFreeSlots() {
+  return [{
+    text: '14:20 Uhr',
+    value: '14:20'
+  }, {
+    text: '14:40 Uhr',
+    value: '14:40'
+  }]
+}
+
 app.post('/kickr/reserve', function(req, res) {
 
   var requiredMatchTime = moment(req.body.text, 'hh:mm');
