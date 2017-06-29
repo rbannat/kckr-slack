@@ -17,7 +17,8 @@ var PORT=4390;
 var db = [{
   time: '14:00',
   createdBy: 'joa',
-  players: ['rene', 'stefan']
+  players: ['rene', 'stefan'],
+  maxPlayers: 4
 }];
 
 app.listen(PORT, function () {
@@ -49,12 +50,13 @@ app.post('/kickr/reserve', function(req, res) {
       createdBy: req.body.user_name,
       players: [
         req.body.user_name
-      ]
+      ],
+      maxPlayers: req.body.text.split(' ')[1] || 4
     });
 
     res.json({
       response_type: 'in_channel',
-      text: '<@' + req.body.user_id + '|' + req.body.user_name+ '> reserved a game at ' + req.body.text + '! Wanna join?',
+      text: '<@' + req.body.user_id + '|' + req.body.user_name+ '> reserved a game at ' + req.body.text.split(' ')[0] + '! Wanna join?',
       attachments: [{
         text: 'Sure you wanna go down in hell?',
         fallback: 'You are unable to choose a game',
@@ -106,9 +108,9 @@ app.post('/kickr/join', function(req, res) {
   }
 
 
-  if (match.players.length >= 4) {
+  if (match.players.length === match.maxPlayers) {
     return res.json({
-      text: 'Sorry, schon 4!!',
+      text: 'Sorry, schon ' + match.maxPlayers + '!!',
       replace_original: true,
     })
   }
