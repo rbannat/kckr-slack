@@ -31,7 +31,7 @@ app.get('/', function(req, res) {
 });
 
 app.post('/kickr/reserve', function(req, res) {
-
+  
   console.log(req.body.text);
 
   // TODO Parse
@@ -48,8 +48,26 @@ app.post('/kickr/reserve', function(req, res) {
 
   if (!roomReserved) {
     res.json({
-      'response_type': 'in_channel',
-      'text': 'Raum ist frei und jetzt für Dich reserviert'
+      "response_type": "in_channel",
+       "text": "Kickrbot reserved a game at 14:00! Wanna join?",
+        "attachments": [
+            {
+                "text": "Sure you wanna go down in hell?",
+                "fallback": "You are unable to choose a game",
+                "callback_id": "wopr_game",
+                "color": "#3AA3E3",
+                "attachment_type": "default",
+                "actions": [
+                    {
+                        "name": "yes",
+                        "text": "Yes ma'am!",
+                        "type": "button",
+                        "value": "yes",
+              "style": "primary"
+                    }
+                ]
+            }
+        ]
     });
   } else {
     res.json({
@@ -58,8 +76,9 @@ app.post('/kickr/reserve', function(req, res) {
   }
 });
 
-app.post('/kickr/join/<12313>', function(req, res) {
-  // res.json('Alles klar, um ' + req.body.text + ' Uhr ist frei');
+app.post('/kickr/join', function(req, res) {
+  console.log(req.body);
+
   res.json({
     "response_type": "in_channel",
     "text": "It's 80 degrees right now.",
@@ -68,5 +87,5 @@ app.post('/kickr/join/<12313>', function(req, res) {
             "text":"Partly cloudy today and tomorrow"
         }
     ]
-  }) ;
+  });
 });
