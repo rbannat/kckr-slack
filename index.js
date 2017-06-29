@@ -91,6 +91,21 @@ app.post('/kickr/join', function(req, res) {
     })
   }
 
+  if (match.createdBy === json.user.name) {
+    return res.json({
+      text: 'Du hast das Spiel erstellt, Idiot!',
+      replace_original: false,
+    })
+  }
+
+  if (match.players.find(player => player === json.user.name)) {
+    return res.json({
+      text: 'Doppelt zählt nicht!',
+      replace_original: false,
+    })
+  }
+
+
   if (match.players.length >= 4) {
     return res.json({
       text: 'Sorry, schon 4!!',
@@ -105,6 +120,6 @@ app.post('/kickr/join', function(req, res) {
   res.json({
     response_type: 'in_channel',
     replace_original: false,
-    text: '<@' + json.user.id + '|' + json.user.name + '> spielt mit ' + match.players.join(' ')
+    text: '<@' + json.user.id + '|' + json.user.name + '> spielt mit ' + match.players.filter(name => name !== json.user.name).join(' ')
   });
 });
