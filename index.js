@@ -58,7 +58,7 @@ app.post('/kickr/reserve', function(req, res) {
       attachments: [{
         text: 'Sure you wanna go down in hell?',
         fallback: 'You are unable to choose a game',
-        callback_id: db.length,
+        callback_id: db.length - 1,
         color: '#3AA3E3',
         attachment_type: 'default',
         actions: [{
@@ -67,7 +67,7 @@ app.post('/kickr/reserve', function(req, res) {
           type: 'button',
           value: 'yes',
           style: 'primary',
-          response_url: process.env.HOST + '/kickr/join/' + db.length
+          response_url: process.env.HOST + '/kickr/join'
         }]
       }]
     });
@@ -80,10 +80,31 @@ app.post('/kickr/reserve', function(req, res) {
 });
 
 app.post('/kickr/join', function(req, res) {
+
   const json = JSON.parse(req.body.payload);
+  const matchId = json.callback_id;
+  const match = db[matchId];
+
+  if (!match) {
+    return res.json({
+      text: 'ID falsch'
+    })
+  }
+
+  if (match.players.length >= 4) {
+    return res.json({
+      text: 'Sorry, schon 4!!',
+      replace_original: true,
+    })
+  }
+
+  match.players.push(json.user.name);
+
+  db[matchId] = match;
+
   res.json({
     response_type: 'in_channel',
     replace_original: false,
-    text: '<@' + json.user.id + '|' + json.user.name + '> nimmt an ... Teil!!'
+    text: '<@' + json.user.id + '|' + json.user.name + '> spielt mit ' + match.players.join(' ')
   });
 });
