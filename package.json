@@ -10,6 +10,7 @@
     "request": "^2.81.0"
   },
   "devDependencies": {
+    "moment": "^2.18.1",
     "nodemon": "^1.11.0"
   },
   "scripts": {
