@@ -13,24 +13,20 @@ var clientSecret = process.env.CLIENT_SECRET;
 var app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 
-
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
 var PORT=4390;
+var matches = [];
 
-var db = [{
-  time: '14:00',
-  createdBy: 'joa',
-  players: ['rene', 'stefan']
-}];
 
 function nearestFutureMinutes(interval, someMoment) {
   const roundedMinutes = Math.ceil(someMoment.minute() / interval) * interval;
   return someMoment.clone().minute(roundedMinutes).second(0);
 }
 
+
 function isSlotFree(requiredMatchTime) {
-  return db.find(match => {
+  return matches.find(match => {
     const matchStart = moment(match.time, 'HH:mm');
     const matchEnd = moment(matchStart).add(20, 'minutes');
     const isReserved = requiredMatchTime.isBetween(matchStart, matchEnd) || requiredMatchTime.isSame(matchStart);
@@ -38,8 +34,8 @@ function isSlotFree(requiredMatchTime) {
   });
 }
 
-function getFreeSlots() {
 
+function getFreeSlots() {
   let nextSlot = nearestFutureMinutes(20, moment());
   let freeSlots = [];
   let time;
@@ -74,7 +70,10 @@ function reserve(timeString, userId, userName){
 
   if (!match) {
 
-    db.push({
+    const newMatchId = time.format('x');
+
+    matches.push({
+      id: newMatchId,
       time: time,
       createdBy: userName,
       players: [
@@ -97,7 +96,7 @@ function reserve(timeString, userId, userName){
           name: 'yes',
           text: "Yes ma'am!",
           type: 'button',
-          value: 'yes',
+          value: newMatchId,
           style: 'primary',
           response_url: process.env.HOST + '/kickr/join'
         }]
@@ -135,8 +134,8 @@ app.post('/kickr/action', function(req, res) {
 
   switch (actionId) {
     case 'join_btn':
-      const matchId = db.length - 1;
-      const match   = db[matchId];
+      const matchId = json.actions[0].value;
+      const match = matches.find(match => parseInt(match.id) === parseInt(matchId));
 
       if (!match) {
         return res.json({
@@ -146,7 +145,7 @@ app.post('/kickr/action', function(req, res) {
 
       if (match.createdBy === json.user.name) {
         return res.json({
-          text            : 'Du hast das Spiel erstellt, Idiot!',
+          text: 'Du hast das Spiel erstellt, Idiot!',
           replace_original: false,
         })
       }
@@ -158,21 +157,21 @@ app.post('/kickr/action', function(req, res) {
         })
       }
 
-  if (match.players.length === MAX_PLAYER) {
-    return res.json({
-      text: 'Sorry, schon ' + MAX_PLAYER + '!!',
-      replace_original: true,
-    })
-  }
+      if (match.players.length === MAX_PLAYER) {
+        return res.json({
+          text: 'Sorry, schon ' + MAX_PLAYER + '!!',
+          replace_original: true,
+        })
+      }
 
       match.players.push(json.user.name);
 
-      db[matchId] = match;
+      matches[matchId] = match;
 
       res.json({
-        response_type   : 'in_channel',
+        response_type: 'in_channel',
         replace_original: false,
-        text            : '<@' + json.user.id + '|' + json.user.name + '> spielt mit ' + match.players.filter(name => name !== json.user.name).join(' ')
+        text: '<@' + json.user.id + '|' + json.user.name + '> spielt mit ' + match.players.filter(name => name !== json.user.name).join(' ')
       });
       break;
     case 'select_times':
