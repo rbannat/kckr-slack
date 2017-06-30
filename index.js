@@ -3,7 +3,7 @@ var express = require('express');
 var request = require('request');
 var bodyParser = require('body-parser');
 var moment = require('moment');
-const MAX_PLAYER = 3;
+const MAX_PLAYER = 2;
 
 require('dotenv').config();
 
@@ -93,24 +93,29 @@ function checkTimeString(timeString) {
   return !/[0-2]?[0-9]:[0-5][0-9]/.test(timeString);
 }
 
+function getUserObject(user) {
+  return '<@' + user.userId + '|' + user.userName + '>';
+}
+
 function reserveMatch(timeString, userId, userName){
+
+  const time = timeString ? moment(timeString, 'HH:mm') : moment();
 
   if (timeString.length !== 0 && checkTimeString(timeString)) {
     return {
       text: 'Oops, du musst eine gültige Zeit im Format HH:mm eingeben',
       replace_original: true,
     };
+
+    if (time.isBefore(moment())) {
+      return {
+        text: 'Oops, wähle einen Zeitpunkt in der Zunkunft',
+        replace_original: true,
+      };
+    }
   }
 
-  const time = timeString ? moment(timeString, 'HH:mm') : moment();
   const match = isSlotFree(time);
-
-  if (time.isBefore(moment())) {
-    return {
-      text: 'Oops, wähle einen Zeitpunkt in der Zunkunft',
-      replace_original: true,
-    };
-  }
 
   if (!match) {
 
@@ -134,7 +139,7 @@ function reserveMatch(timeString, userId, userName){
 
     return {
       response_type: 'in_channel',
-      text: '<@' + userId + '|' + userName+ '> hat um ' + time.format('HH:mm') + ' den Kicker reserviert! Bist du dabei?',
+      text: getUserObject({userId, userName}) + ' hat um ' + time.format('HH:mm') + ' Uhr den Kicker reserviert! Bist du dabei?',
       attachments: [{
         text: 'Sure you wanna go down in hell?',
         fallback: 'You are unable to choose a game',
@@ -150,7 +155,7 @@ function reserveMatch(timeString, userId, userName){
         },
           {
             name: 'cancel',
-            text: "Cancel",
+            text: "Spiel absagen",
             type: 'button',
             value: newMatchId,
             style: 'danger'
@@ -159,7 +164,7 @@ function reserveMatch(timeString, userId, userName){
     };
   } else {
     return {
-      text: 'Sorry, um ' + time.format('HH:mm') + ' Uhr ist der Raum bereits von <@' + match.createdBy.userId + '|' + match.createdBy.userName + '> belegt!',
+      text: 'Sorry, um ' + time.format('HH:mm') + ' Uhr ist der Raum bereits von ' + getUserObject(match.createdBy) + ' belegt!',
       response_type: 'in_channel',
       attachments: [
         {
@@ -184,7 +189,6 @@ function reserveMatch(timeString, userId, userName){
 
 function cancelMatch(matchId, userId, userName) {
   const match = matches.find((match) => match.id === matchId);
-  console.log(match, matchId, userId);
 
   if (!match) {
     return {
@@ -199,7 +203,8 @@ function cancelMatch(matchId, userId, userName) {
       return match.createdBy.userId !== userId;
     });
     return {
-      text: 'Hey ' + match.players.map(player => '<@' + player.userId + '|' + player.userName + '>').join(', ') + ' das Match um ' + match.time.format('HH:mm') + ' wurde gecancelled',
+      text: 'Hey ' + match.players.map(player => getUserObject(player)).join(', ') +
+        ' das Match um ' + match.time.format('HH:mm') + ' Uhr wurde gecancelled',
       replace_original: true,
     }
   } else {
@@ -234,7 +239,8 @@ function joinMatch(matchId, userId, userName) {
   if (match.players.length === MAX_PLAYER) {
 
     let text = 'Perfekt, ihr seid vollständig!\n';
-    text += 'Teilnehmer: ' + match.players.join(', ') + ', ' + userName + ' \n';
+    text += 'Teilnehmer: ' + match.players.map(player => getUserObject(player)).join(', ') + ', '
+    text += getUserObject({userName, userId}) + ' \n';
     text += 'Uhrzeit: ' + match.time.format('HH:mm') + ' Uhr'
 
     return {
@@ -247,7 +253,7 @@ function joinMatch(matchId, userId, userName) {
         actions: [
           {
             name: 'cancel',
-            text: "Cancel",
+            text: "Spiel absagen",
             type: 'button',
             value: matchId,
             style: 'danger'
@@ -262,6 +268,10 @@ function joinMatch(matchId, userId, userName) {
   return {
     response_type: 'in_channel',
     replace_original: false,
-    text: '<@' + userId + '|' + userName + '> spielt mit ' + match.players.filter(player => player.userId !== userId).map(player => player.userName).join(', ')
+    text: getUserObject({userName, userId}) + ' spielt mit ' +
+      match.players
+        .filter(player => player.userId !== userId)
+        .map(player => getUserObject(player))
+        .join(', ')
   };
 }
