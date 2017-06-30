@@ -123,7 +123,10 @@ function reserveMatch(timeString, userId, userName){
         userName,
       },
       players: [
-        userName
+        {
+          userId,
+          userName
+        }
       ]
     });
 
@@ -214,14 +217,14 @@ function joinMatch(matchId, userId, userName) {
     return { text: 'ID falsch' };
   }
 
-  if (match.createdBy.userName === userName) {
+  if (match.createdBy.userId === userId) {
     return {
       text: 'Du hast das Spiel erstellt, Idiot!',
       replace_original: false,
     };
   }
 
-  if (match.players.find(player => player === userName)) {
+  if (match.players.find(player => player.userId === userId)) {
     return {
       text: 'Du bist bereits für das Spiel eingetragen',
       replace_original: false,
@@ -243,19 +246,19 @@ function joinMatch(matchId, userId, userName) {
             name: 'cancel',
             text: "Cancel",
             type: 'button',
-            value: newMatchId,
+            value: matchId,
             style: 'danger'
           }]
       }]
     };
   }
 
-  match.players.push(userName);
+  match.players.push({userId, userName});
   matches[matchId] = match;
 
   return {
     response_type: 'in_channel',
     replace_original: false,
-    text: '<@' + userId + '|' + userName + '> spielt mit ' + match.players.filter(name => name !== userName).join(', ')
+    text: '<@' + userId + '|' + userName + '> spielt mit ' + match.players.filter(player => player.userId !== userId).map(player => player.userName).join(', ')
   };
 }
