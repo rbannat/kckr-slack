@@ -21,28 +21,41 @@ var db = [{
   maxPlayers: 4
 }];
 
+function nearestFutureMinutes(interval, someMoment) {
+  const roundedMinutes = Math.ceil(someMoment.minute() / interval) * interval;
+  return someMoment.clone().minute(roundedMinutes).second(0);
+}
+
+function isSlotFree(requiredMatchTime) {
+  return db.find(match => {
+    const matchStart = moment(match.time, 'HH:mm');
+    const matchEnd = moment(matchStart).add(20, 'minutes');
+    const isReserved = requiredMatchTime.isBetween(matchStart, matchEnd) || requiredMatchTime.isSame(matchStart);
+    return isReserved ? match : null;
+  });
+}
+
 function getFreeSlots() {
-  return [{
-    text: '14:20 Uhr',
-    value: '14:20'
-  }, {
-    text: '14:40 Uhr',
-    value: '14:40'
-  }]
+
+  let nextSlot = nearestFutureMinutes(20, moment());
+  let freeSlots = [];
+  let time;
+
+  do {
+    nextSlot.add(20, 'minutes')
+    if (!isSlotFree(nextSlot)) {
+      time = nextSlot.format('HH:mm');
+      freeSlots.push({ text: time + ' Uhr', value: time });
+    }
+  } while (nextSlot.isBefore(moment().endOf('day')))
+
+  return freeSlots;
 }
 
 app.post('/kickr/reserve', function(req, res) {
 
-  var requiredMatchTime = moment(req.body.text, 'hh:mm');
-
-  const match = db.find(match => {
-
-    const matchStart = moment(match.time, 'hh:mm');
-    const matchEnd = moment(matchStart).add(20, 'minutes');
-    const isReserved = requiredMatchTime.isBetween(matchStart, matchEnd) || requiredMatchTime.isSame(matchStart);
-
-    return isReserved ? match : null;
-  });
+  var requiredMatchTime = moment(req.body.text, 'HH:mm');
+  const match = isSlotFree(requiredMatchTime);
 
   if (!match) {
 
