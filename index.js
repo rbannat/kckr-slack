@@ -52,7 +52,6 @@ function getFreeSlots() {
 }
 
 server.listen(PORT, function () {
-  // Callback triggered when server is successfully listening. Hurray!
   console.log('Example app listening on port ' + PORT);
 });
 
@@ -61,10 +60,25 @@ io.on('connection', (socket) => {
 });
 
 app.post('/kickr/reserve', function(req, res) {
-  res.json(reserve(req.body.text, req.body.user_id, req.body.user_name));
+  res.json(reserveMatch(req.body.text, req.body.user_id, req.body.user_name));
 });
 
-function reserve(timeString, userId, userName){
+app.post('/kickr/action', function(req, res) {
+  const json = JSON.parse(req.body.payload);
+  const actionId = json.callback_id;
+
+  switch (actionId) {
+    case 'join_btn':
+      res.json(joinMatch(json.actions[0].value, json.user.id, json.user.name));
+      break;
+    case 'select_times':
+      res.json(reserveMatch(json.actions[0].selected_options[0].value, json.user.id, json.user.name));
+      break;
+  }
+});
+
+
+function reserveMatch(timeString, userId, userName){
 
   if (timeString.length !== 5 || !/[0-2]?[0-9]:[0-5][0-9]/.test(timeString)) {
     return {
@@ -134,57 +148,41 @@ function reserve(timeString, userId, userName){
   }
 }
 
-app.post('/kickr/action', function(req, res) {
 
-  const json = JSON.parse(req.body.payload);
-  const actionId = json.callback_id;
+function joinMatch(matchId, userId, userName) {
+  const match = matches.find(match => parseInt(match.id) === parseInt(matchId));
 
-  switch (actionId) {
-    case 'join_btn':
-      const matchId = json.actions[0].value;
-      const match = matches.find(match => parseInt(match.id) === parseInt(matchId));
-
-      if (!match) {
-        return res.json({
-          text: 'ID falsch'
-        })
-      }
-
-      if (match.createdBy === json.user.name) {
-        return res.json({
-          text: 'Du hast das Spiel erstellt, Idiot!',
-          replace_original: false,
-        })
-      }
-
-      if (match.players.find(player => player === json.user.name)) {
-        return res.json({
-          text            : 'Doppelt zählt nicht!',
-          replace_original: false,
-        })
-      }
-
-      if (match.players.length === MAX_PLAYER) {
-        return res.json({
-          text: 'Sorry, schon ' + MAX_PLAYER + '!!',
-          replace_original: true,
-        })
-      }
-
-      match.players.push(json.user.name);
-
-      matches[matchId] = match;
-
-      res.json({
-        response_type: 'in_channel',
-        replace_original: false,
-        text: '<@' + json.user.id + '|' + json.user.name + '> spielt mit ' + match.players.filter(name => name !== json.user.name).join(' ')
-      });
-      break;
-    case 'select_times':
-      res.json(reserve(json.actions[0].selected_options[0].value, json.user.id, json.user.name));
-      break;
-    default:
-      break;
+  if (!match) {
+    return { text: 'ID falsch' };
   }
-});
+
+  if (match.createdBy === userName) {
+    return {
+      text: 'Du hast das Spiel erstellt, Idiot!',
+      replace_original: false,
+    };
+  }
+
+  if (match.players.find(player => player === userName)) {
+    return {
+      text: 'Doppelt zählt nicht!',
+      replace_original: false,
+    };
+  }
+
+  if (match.players.length === MAX_PLAYER) {
+    return {
+      text: 'Sorry, schon ' + MAX_PLAYER + '!!',
+      replace_original: true,
+    };
+  }
+
+  match.players.push(userName);
+  matches[matchId] = match;
+
+  return {
+    response_type: 'in_channel',
+    replace_original: false,
+    text: '<@' + userId + '|' + userName + '> spielt mit ' + match.players.filter(name => name !== userName).join(' ')
+  };
+}
