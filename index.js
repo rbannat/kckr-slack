@@ -37,8 +37,7 @@ app.post('/kickr/reserve', function(req, res) {
   if (req.body.text === 'list') {
     return res.json(getMatchList());
   }
-
-  res.json(reserveMatch(req.body.text, req.body.user_id, req.body.user_name));
+    res.json(reserveMatch(req.body.text || '', req.body.user_id, req.body.user_name));
 });
 
 app.post('/kickr/action', function(req, res) {
@@ -158,16 +157,16 @@ function reserveMatch(timeString, userId, userName){
     id: newMatchId,
     time: time,
     createdBy: {
-      userId,
-      userName,
+      userId: userId || 'anonymous',
+      userName: userName || 'anonymous',
     },
     players: [{
-      userId,
-      userName
+      userId: userId || 'anonymous',
+      userName: userName || 'anonymous',
     }]
   });
 
-  io.emit('reserve_success', { data: 'reserved successful' });
+  //io.emit('reserve_success', { data: 'reserved successful' });
 
   return {
     response_type: 'in_channel',
