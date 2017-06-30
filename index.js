@@ -99,7 +99,27 @@ app.post('/kickr/reserve', function(req, res) {
     let text = 'Sorry, Raum ist nicht frei ;(';
     text += match.createdBy + ' spielt von ';
 
-    res.json({ text });
+    res.json({ 
+      text,
+      response_type: 'in_channel',
+      attachments: [
+        {
+          fallback: 'Upgrade your Slack client to use messages like these.',
+          color: '3AA3E3',
+          attachment_type: 'default',
+          callback_id: 'select_remote_1234',
+          actions: [
+            {
+              name: 'times_list',
+              text: 'Wähle eine andere Zeit!',
+              type: 'select',
+              options: getFreeSlots()
+            }
+          ],
+          response_url: process.env.HOST + '/kickr/reserve'
+        }
+      ]
+    }); 
   }
 });
 
