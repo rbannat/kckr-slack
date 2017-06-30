@@ -26,6 +26,18 @@ io.on('connection', (socket) => {
   console.log('a user connected');
 });
 
+app.get('/kickr/free', function(req, res) {
+
+  const nextMatch = matches.find(match => {
+    return match.id > moment().format('x');
+  });
+
+  res.json({
+    minutesToNextMatch: nextMatch ? moment(nextMatch.time).diff(moment(), 'minutes') : -1,
+    match: nextMatch
+  });
+});
+
 app.post('/kickr/reserve', function(req, res) {
   res.json(reserveMatch(req.body.text, req.body.user_id, req.body.user_name));
 });
