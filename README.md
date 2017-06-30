@@ -12,4 +12,5 @@ CLIENT_SECRET=<MY SECRET>
 
 
 TODOs
+* Spielzeit als unix timestamp und ID
 * hack time > now ?
