@@ -30,7 +30,6 @@ function nearestFutureMinutes(interval, someMoment) {
 }
 
 function isSlotFree(requiredMatchTime) {
-  console.log(requiredMatchTime);
   return db.find(match => {
     const matchStart = moment(match.time, 'HH:mm');
     const matchEnd = moment(matchStart).add(20, 'minutes');
@@ -66,25 +65,28 @@ io.on('connection', (socket) => {
 });
 
 app.post('/kickr/reserve', function(req, res) {
+  res.json(reserve(req.body.text, req.body.user_id, req.body.user_name));
+});
 
-  var requiredMatchTime = moment(req.body.text, 'HH:mm');
-  const match = isSlotFree(requiredMatchTime);
+function reserve(timeString, userId, userName){
+  var time = moment(timeString, 'HH:mm');
+  const match = isSlotFree(time);
 
   if (!match) {
 
     db.push({
-      time: req.body.text,
-      createdBy: req.body.user_name,
+      time: time,
+      createdBy: userName,
       players: [
-        req.body.user_name
+        userName
       ]
     });
 
     io.emit('reserve_success', { data: 'reserved successful' });
 
-    res.json({
+    return {
       response_type: 'in_channel',
-      text: '<@' + req.body.user_id + '|' + req.body.user_name+ '> reserved a game at ' + req.body.text.split(' ')[0] + '! Wanna join?',
+      text: '<@' + userId + '|' + userName+ '> reserved a game at ' + timeString.split(' ')[0] + '! Wanna join?',
       attachments: [{
         text: 'Sure you wanna go down in hell?',
         fallback: 'You are unable to choose a game',
@@ -100,10 +102,10 @@ app.post('/kickr/reserve', function(req, res) {
           response_url: process.env.HOST + '/kickr/join'
         }]
       }]
-    });
+    };
   } else {
-    res.json({
-      text: 'Sorry, um ' + req.body.text + ' Uhr ist der Raum bereits von <@' + req.body.user_id + '|' + req.body.user_name+ '> belegt!',
+    return {
+      text: 'Sorry, um ' + timeString + ' Uhr ist der Raum bereits von <@' + userId + '|' + userName + '> belegt!',
       response_type: 'in_channel',
       attachments: [
         {
@@ -122,9 +124,9 @@ app.post('/kickr/reserve', function(req, res) {
           response_url: process.env.HOST + '/kickr/reserve'
         }
       ]
-    });
+    };
   }
-});
+}
 
 app.post('/kickr/action', function(req, res) {
 
@@ -174,7 +176,7 @@ app.post('/kickr/action', function(req, res) {
       });
       break;
     case 'select_times':
-      reserve('14:00');
+      res.json(reserve(json.actions[0].selected_options[0].value, json.user.id, json.user.name));
       break;
     default:
       break;
