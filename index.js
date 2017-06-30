@@ -173,7 +173,7 @@ function reserveMatch(timeString, userId, userName){
   return {
     response_type: 'in_channel',
     text: getUserObject({userId, userName}) + ' hat von ' + time.format('HH:mm') + ' Uhr bis ' +
-     time.add(20, 'minutes').format('HH:mm') + ' Uhr den Kicker reserviert! Bist du dabei?',
+      moment(time).add(20, 'minutes').format('HH:mm') + ' Uhr den Kicker reserviert! Bist du dabei?',
     attachments: [{
       fallback: 'You are unable to choose a game',
       callback_id: 'match_actions',
