@@ -7,17 +7,13 @@ const MAX_PLAYER = 4;
 
 require('dotenv').config();
 
-var clientId = process.env.CLIENT_ID;
-var clientSecret = process.env.CLIENT_SECRET;
-
 var app = express();
-app.use(bodyParser.urlencoded({ extended: true }));
-
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
 var PORT=4390;
 var matches = [];
 
+app.use(bodyParser.urlencoded({ extended: true }));
 server.listen(PORT, function () {
   console.log('Example app listening on port ' + PORT);
 });
@@ -123,7 +119,7 @@ function reserveMatch(timeString, userId, userName){
         text: 'Sure you wanna go down in hell?',
         fallback: 'You are unable to choose a game',
         callback_id: 'join_btn',
-        color: '#3AA3E3',
+        color: '#67a92f',
         attachment_type: 'default',
         actions: [{
           name: 'yes',
@@ -142,7 +138,7 @@ function reserveMatch(timeString, userId, userName){
       attachments: [
         {
           fallback: 'Upgrade your Slack client to use messages like these.',
-          color: '3AA3E3',
+          color: '#67a92f',
           attachment_type: 'default',
           callback_id: 'select_times',
           actions: [
