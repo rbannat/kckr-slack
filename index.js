@@ -68,13 +68,15 @@ function nearestFutureMinutes(interval, someMoment) {
 }
 
 
-function isSlotFree(requiredMatchTime) {
+function getRunningMatch(requiredMatchTime) {
+
+  requiredMatchTime = requiredMatchTime.format('x');
+
   return matches.find(match => {
-    const matchStart = moment(match.time, 'HH:mm');
-    const matchEnd = moment(matchStart).add(20, 'minutes');
-    const isReserved = requiredMatchTime.isBetween(matchStart, matchEnd) || requiredMatchTime.isSame(matchStart);
-    return !isReserved;
-  }) || null;
+    const matchStart = moment(match.time).format('x');
+    const matchEnd = moment(match.time).add(20, 'minutes').format('x');
+    return (requiredMatchTime >= matchStart && requiredMatchTime <= matchEnd);
+  });
 }
 
 
@@ -85,7 +87,7 @@ function getFreeSlots() {
 
   do {
     nextSlot.add(20, 'minutes')
-    if (!isSlotFree(nextSlot)) {
+    if (!getRunningMatch(nextSlot)) {
       time = nextSlot.format('HH:mm');
       freeSlots.push({ text: time + ' Uhr', value: time });
     }
@@ -134,11 +136,11 @@ function reserveMatch(timeString, userId, userName){
     };
   }
 
-  const existingMatch = isSlotFree(time);
+  const runningMatch = getRunningMatch(time);
 
-  if (existingMatch) {
+  if (runningMatch) {
     return {
-      text: 'Sorry, um ' + time.format('HH:mm') + ' Uhr ist der Raum bereits von ' + getUserObject(existingMatch.createdBy) + ' belegt!',
+      text: 'Sorry, um ' + time.format('HH:mm') + ' Uhr ist der Raum bereits von ' + getUserObject(runningMatch.createdBy) + ' belegt!',
       attachments: [{
         fallback: 'Upgrade your Slack client to use messages like these.',
         color: '#67a92f',
