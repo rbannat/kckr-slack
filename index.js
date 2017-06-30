@@ -18,6 +18,32 @@ var io = require('socket.io')(server);
 var PORT=4390;
 var matches = [];
 
+server.listen(PORT, function () {
+  console.log('Example app listening on port ' + PORT);
+});
+
+io.on('connection', (socket) => {
+  console.log('a user connected');
+});
+
+app.post('/kickr/reserve', function(req, res) {
+  res.json(reserveMatch(req.body.text, req.body.user_id, req.body.user_name));
+});
+
+app.post('/kickr/action', function(req, res) {
+  const json = JSON.parse(req.body.payload);
+  const actionId = json.callback_id;
+
+  switch (actionId) {
+    case 'join_btn':
+      res.json(joinMatch(json.actions[0].value, json.user.id, json.user.name));
+      break;
+    case 'select_times':
+      res.json(reserveMatch(json.actions[0].selected_options[0].value, json.user.id, json.user.name));
+      break;
+  }
+});
+
 
 function nearestFutureMinutes(interval, someMoment) {
   const roundedMinutes = Math.ceil(someMoment.minute() / interval) * interval;
@@ -50,32 +76,6 @@ function getFreeSlots() {
 
   return freeSlots;
 }
-
-server.listen(PORT, function () {
-  console.log('Example app listening on port ' + PORT);
-});
-
-io.on('connection', (socket) => {
-  console.log('a user connected');
-});
-
-app.post('/kickr/reserve', function(req, res) {
-  res.json(reserveMatch(req.body.text, req.body.user_id, req.body.user_name));
-});
-
-app.post('/kickr/action', function(req, res) {
-  const json = JSON.parse(req.body.payload);
-  const actionId = json.callback_id;
-
-  switch (actionId) {
-    case 'join_btn':
-      res.json(joinMatch(json.actions[0].value, json.user.id, json.user.name));
-      break;
-    case 'select_times':
-      res.json(reserveMatch(json.actions[0].selected_options[0].value, json.user.id, json.user.name));
-      break;
-  }
-});
 
 
 function reserveMatch(timeString, userId, userName){
