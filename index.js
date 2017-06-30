@@ -33,6 +33,11 @@ app.get('/kickr/free', function(req, res) {
 });
 
 app.post('/kickr/reserve', function(req, res) {
+
+  if (req.body.text === 'list') {
+    return res.json(getMatchList());
+  }
+
   res.json(reserveMatch(req.body.text, req.body.user_id, req.body.user_name));
 });
 
@@ -93,6 +98,20 @@ function checkTimeString(timeString) {
 
 function getUserObject(user) {
   return '<@' + user.userId + '|' + user.userName + '>';
+}
+
+function getMatchList() {
+  if (!matches.length) {
+    return { text: 'Keine Reservierungen für heute' };
+  }
+
+  let list = 'Reservierungen:\n';
+  list += matches.map((match, index) => {
+    return '\n' + (index+1) + '. ' + match.time.format('HH:mm') + ' Uhr, Teilnehmer:  ' +
+      match.players.map(player => getUserObject(player)).join(' ')
+  });
+
+  return { text: list };
 }
 
 function reserveMatch(timeString, userId, userName){
