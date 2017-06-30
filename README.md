@@ -9,3 +9,7 @@
 CLIENT_ID=<MY ID>
 CLIENT_SECRET=<MY SECRET>
 ```
+
+
+TODOs
+* hack time > now ?
