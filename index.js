@@ -34,17 +34,42 @@ app.get('/kickr/free', function(req, res) {
   });
 });
 
+function parseParams(paramString) {
+  return paramString.split(' ');
+}
+
 app.post('/kickr/reserve', function(req, res) {
-  res.json(reserveMatch(req.body.text, req.body.user_id, req.body.user_name));
+  const params = parseParams(req.body.text);
+  console.log(params);
+  if(params.length === 1) {
+    res.json(reserveMatch(params[0], req.body.user_id, req.body.user_name));
+  } else if(params[1] === 'cancel') {
+    res.json(cancelMatch(params[0], req.body.user_id, req.body.user_name));
+  } else {
+    res.json({
+      text: 'Oops, ich habe dich nicht verstanden o.O',
+      replace_original: false,
+    });
+  }
+
 });
 
 app.post('/kickr/action', function(req, res) {
   const json = JSON.parse(req.body.payload);
   const actionId = json.callback_id;
 
+  console.log(json);
+
   switch (actionId) {
-    case 'join_btn':
-      res.json(joinMatch(json.actions[0].value, json.user.id, json.user.name));
+    case 'match_actions':
+      if (json.actions[0].name === 'cancel') {
+        res.json(cancelMatch(json.actions[0].value, json.user.id, json.user.name))
+      } else {
+        res.json(joinMatch(json.actions[0].value, json.user.id, json.user.name));
+      }
+      break;
+    case 'cancel_btn':
+      res.json(cancelMatch(json.actions[0].selected_options[0].value, json.user.id, json.user.name));
       break;
     case 'select_times':
       res.json(reserveMatch(json.actions[0].selected_options[0].value, json.user.id, json.user.name));
@@ -85,10 +110,13 @@ function getFreeSlots() {
   return freeSlots;
 }
 
+function checkTimeString(timeString) {
+  return !/[0-2]?[0-9]:[0-5][0-9]/.test(timeString);
+}
 
 function reserveMatch(timeString, userId, userName){
 
-  if (timeString.length !== 0 && !/[0-2]?[0-9]:[0-5][0-9]/.test(timeString)) {
+  if (timeString.length !== 0 && checkTimeString(timeString)) {
     return {
       text: 'Oops, du musst eine gültige Zeit im Format HH:mm eingeben',
       replace_original: true,
@@ -126,18 +154,25 @@ function reserveMatch(timeString, userId, userName){
       response_type: 'in_channel',
       text: '<@' + userId + '|' + userName+ '> hat um ' + time.format('HH:mm') + ' den Kicker reserviert! Bist du dabei?',
       attachments: [{
-        text: 'Zusagen?',
-        callback_id: 'join_btn',
+        text: 'Sure you wanna go down in hell?',
+        fallback: 'You are unable to choose a game',
+        callback_id: 'match_actions',
         color: '#67a92f',
         attachment_type: 'default',
         actions: [{
           name: 'yes',
-          text: "Na klar!",
+          text: "Yes ma'am!",
           type: 'button',
           value: newMatchId,
-          style: 'primary',
-          response_url: process.env.HOST + '/kickr/join'
-        }]
+          style: 'primary'
+        },
+          {
+            name: 'cancel',
+            text: "Cancel",
+            type: 'button',
+            value: newMatchId,
+            style: 'danger'
+          }]
       }]
     };
   } else {
@@ -165,6 +200,33 @@ function reserveMatch(timeString, userId, userName){
   }
 }
 
+function cancelMatch(matchId, userId, userName) {
+  const match = matches.find((match) => match.id === matchId);
+  console.log(match, matchId, userId);
+
+  if (!match) {
+    return {
+      text: 'Match nicht vorhanden.',
+      replace_original: false,
+    }
+  }
+  // check owner
+  if (match.createdBy.userId === userId) {
+    // delete match
+    matches = matches.filter((match) => {
+      return match.createdBy.userId !== userId;
+    });
+    return {
+      text: 'Match wurde gecancelled',
+      replace_original: true,
+    }
+  } else {
+    return {
+      text: 'Du bist nicht der owner!',
+      replace_original: false,
+    }
+  }
+}
 
 function joinMatch(matchId, userId, userName) {
   const match = matches.find(match => parseInt(match.id) === parseInt(matchId));
@@ -191,6 +253,21 @@ function joinMatch(matchId, userId, userName) {
     return {
       text: 'Too late ;( Für das Spiel sind schon ' + MAX_PLAYER + ' Spieler eingetragen',
       replace_original: true,
+      attachments: [{
+        text: 'Sure you wanna go down in hell?',
+        fallback: 'You are unable to choose a game',
+        callback_id: 'match_actions',
+        color: '#67a92f',
+        attachment_type: 'default',
+        actions: [
+          {
+            name: 'cancel',
+            text: "Cancel",
+            type: 'button',
+            value: newMatchId,
+            style: 'danger'
+          }]
+      }]
     };
   }
 
