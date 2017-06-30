@@ -65,13 +65,20 @@ app.post('/kickr/reserve', function(req, res) {
 });
 
 function reserve(timeString, userId, userName){
-  var time = timeString ? moment(timeString, 'HH:mm') : moment();
+
+  if (timeString.length !== 5 || !/[0-2]?[0-9]:[0-5][0-9]/.test(timeString)) {
+    return {
+      text: 'Oops, du musst eine gültige Zeit im Format HH:mm übergeben.',
+      replace_original: true,
+    };
+  }
+
+  const time = timeString ? moment(timeString, 'HH:mm') : moment();
   const match = isSlotFree(time);
 
   if (!match) {
 
     const newMatchId = time.format('x');
-
     matches.push({
       id: newMatchId,
       time: time,
