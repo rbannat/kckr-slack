@@ -3,7 +3,7 @@ var express = require('express');
 var request = require('request');
 var bodyParser = require('body-parser');
 var moment = require('moment');
-const MAX_PLAYER = 4;
+const MAX_PLAYER = 3;
 
 require('dotenv').config();
 
@@ -152,7 +152,7 @@ function reserveMatch(timeString, userId, userName){
             name: 'cancel',
             text: "Cancel",
             type: 'button',
-            value: newMatchId,
+            value: matchId,
             style: 'danger'
           }]
       }]
@@ -232,12 +232,15 @@ function joinMatch(matchId, userId, userName) {
   }
 
   if (match.players.length === MAX_PLAYER) {
+
+    let text = 'Perfekt, ihr seid vollständig!\n';
+    text += 'Teilnehmer: ' + match.players.join(', ') + ', ' + userName + ' \n';
+    text += 'Uhrzeit: ' + match.time.format('HH:mm') + ' Uhr'
+
     return {
-      text: 'Too late ;( Für das Spiel sind schon ' + MAX_PLAYER + ' Spieler eingetragen',
+      text,
       replace_original: true,
       attachments: [{
-        text: 'Sure you wanna go down in hell?',
-        fallback: 'You are unable to choose a game',
         callback_id: 'match_actions',
         color: '#67a92f',
         attachment_type: 'default',
