@@ -96,11 +96,8 @@ app.post('/kickr/reserve', function(req, res) {
       }]
     });
   } else {
-    let text = 'Sorry, Raum ist nicht frei ;(';
-    text += match.createdBy + ' spielt von ';
-
-    res.json({ 
-      text,
+    res.json({
+      text: 'Sorry, um ' + req.body.text + ' Uhr ist der Raum bereits von <@' + req.body.user_id + '|' + req.body.user_name+ '> belegt!',
       response_type: 'in_channel',
       attachments: [
         {
@@ -119,7 +116,7 @@ app.post('/kickr/reserve', function(req, res) {
           response_url: process.env.HOST + '/kickr/reserve'
         }
       ]
-    }); 
+    });
   }
 });
 
