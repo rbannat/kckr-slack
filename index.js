@@ -98,13 +98,23 @@ function reserveMatch(timeString, userId, userName){
   const time = timeString ? moment(timeString, 'HH:mm') : moment();
   const match = isSlotFree(time);
 
+  if (time.isBefore(moment())) {
+    return {
+      text: 'Oops, wähle einen Zeitpunkt in der Zunkunft',
+      replace_original: true,
+    };
+  }
+
   if (!match) {
 
     const newMatchId = time.format('x');
     matches.push({
       id: newMatchId,
       time: time,
-      createdBy: userName,
+      createdBy: {
+        userId,
+        userName,
+      },
       players: [
         userName
       ]
@@ -133,7 +143,7 @@ function reserveMatch(timeString, userId, userName){
     };
   } else {
     return {
-      text: 'Sorry, um ' + time.format('HH:mm') + ' Uhr ist der Raum bereits von <@' + userId + '|' + userName + '> belegt!',
+      text: 'Sorry, um ' + time.format('HH:mm') + ' Uhr ist der Raum bereits von <@' + match.createdBy.userId + '|' + match.createdBy.userName + '> belegt!',
       response_type: 'in_channel',
       attachments: [
         {
@@ -164,7 +174,7 @@ function joinMatch(matchId, userId, userName) {
     return { text: 'ID falsch' };
   }
 
-  if (match.createdBy === userName) {
+  if (match.createdBy.userName === userName) {
     return {
       text: 'Du hast das Spiel erstellt, Idiot!',
       replace_original: false,

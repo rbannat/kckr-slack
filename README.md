@@ -8,9 +8,8 @@
 ```
 CLIENT_ID=<MY ID>
 CLIENT_SECRET=<MY SECRET>
+HOST=
 ```
 
 
 TODOs
-* Spielzeit als unix timestamp und ID
-* hack time > now ?
