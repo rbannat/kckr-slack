@@ -14,9 +14,7 @@ var PORT=4390;
 var matches = [];
 
 app.use(bodyParser.urlencoded({ extended: true }));
-server.listen(PORT, function () {
-  console.log('Example app listening on port ' + PORT);
-});
+server.listen(PORT);
 
 io.on('connection', (socket) => {
   console.log('a user connected');
@@ -115,77 +113,70 @@ function reserveMatch(timeString, userId, userName){
     };
   }
 
-  const match = isSlotFree(time);
+  const existingMatch = isSlotFree(time);
 
-  if (!match) {
-
-    const newMatchId = time.format('x');
-    matches.push({
-      id: newMatchId,
-      time: time,
-      createdBy: {
-        userId,
-        userName,
-      },
-      players: [
-        {
-          userId,
-          userName
-        }
-      ]
-    });
-
-    io.emit('reserve_success', { data: 'reserved successful' });
-
+  if (existingMatch) {
     return {
+      text: 'Sorry, um ' + time.format('HH:mm') + ' Uhr ist der Raum bereits von ' + getUserObject(existingMatch.createdBy) + ' belegt!',
       response_type: 'in_channel',
-      text: getUserObject({userId, userName}) + ' hat von ' + time.format('HH:mm') + ' Uhr bis ' +
-       time.add(20, 'minutes').format('HH:mm') + ' Uhr den Kicker reserviert! Bist du dabei?',
       attachments: [{
-        fallback: 'You are unable to choose a game',
-        callback_id: 'match_actions',
+        fallback: 'Upgrade your Slack client to use messages like these.',
         color: '#67a92f',
         attachment_type: 'default',
+        callback_id: 'select_times',
         actions: [{
-          name: 'yes',
-          text: "Bin dabei",
-          type: 'button',
-          value: newMatchId,
-          style: 'primary'
-        },
-          {
-            name: 'cancel',
-            text: "Spiel absagen",
-            type: 'button',
-            value: newMatchId,
-            style: 'danger'
-          }]
+          name: 'times_list',
+          text: 'Wähle eine andere Zeit!',
+          type: 'select',
+          options: getFreeSlots()
+        }],
+        response_url: process.env.HOST + '/kickr/reserve'
       }]
     };
-  } else {
-    return {
-      text: 'Sorry, um ' + time.format('HH:mm') + ' Uhr ist der Raum bereits von ' + getUserObject(match.createdBy) + ' belegt!',
-      response_type: 'in_channel',
-      attachments: [
-        {
-          fallback: 'Upgrade your Slack client to use messages like these.',
-          color: '#67a92f',
-          attachment_type: 'default',
-          callback_id: 'select_times',
-          actions: [
-            {
-              name: 'times_list',
-              text: 'Wähle eine andere Zeit!',
-              type: 'select',
-              options: getFreeSlots()
-            }
-          ],
-          response_url: process.env.HOST + '/kickr/reserve'
-        }
-      ]
-    };
   }
+
+  const newMatchId = time.format('x');
+  matches.push({
+    id: newMatchId,
+    time: time,
+    createdBy: {
+      userId,
+      userName,
+    },
+    players: [{
+      userId,
+      userName
+    }]
+  });
+
+  io.emit('reserve_success', { data: 'reserved successful' });
+
+  return {
+    response_type: 'in_channel',
+    text: getUserObject({userId, userName}) + ' hat von ' + time.format('HH:mm') + ' Uhr bis ' +
+     time.add(20, 'minutes').format('HH:mm') + ' Uhr den Kicker reserviert! Bist du dabei?',
+    attachments: [{
+      fallback: 'You are unable to choose a game',
+      callback_id: 'match_actions',
+      color: '#67a92f',
+      attachment_type: 'default',
+      actions: [{
+        name: 'yes',
+        text: "Bin dabei",
+        type: 'button',
+        value: newMatchId,
+        style: 'primary'
+      }, {
+        name: 'cancel',
+        text: "Spiel absagen",
+        type: 'button',
+        value: newMatchId,
+        style: 'danger'
+      }]
+    }]
+  };
 }
+
 
 function cancelMatch(matchId, userId, userName) {
   const match = matches.find((match) => match.id === matchId);
@@ -199,20 +190,22 @@ function cancelMatch(matchId, userId, userName) {
 
   // check owner
   if (match.createdBy.userId === userId) {
+
     // delete match
     matches = matches.filter((match) => {
       return match.createdBy.userId !== userId;
     });
+
     return {
       text: 'Hey ' + match.players.map(player => getUserObject(player)).join(', ') +
-        ', das Match um ' + match.time.format('HH:mm') + ' Uhr wurde gecancelled!',
+        ', das Match um ' + match.time.format('HH:mm') + ' Uhr wurde abgesagt!',
       replace_original: true,
     }
-  } else {
-    return {
-      text: 'Du kannst du Spiele absagen, die du selbst angelegt hast!',
-      replace_original: false,
-    }
+  }
+
+  return {
+    text: 'Du kannst nur Spiele absagen, die du selbst angelegt hast!',
+    replace_original: false,
   }
 }
 
