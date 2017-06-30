@@ -3,7 +3,7 @@ var express = require('express');
 var request = require('request');
 var bodyParser = require('body-parser');
 var moment = require('moment');
-const MAX_PLAYER = 2;
+const MAX_PLAYER = 3;
 
 require('dotenv').config();
 
