@@ -4,11 +4,24 @@
 const tessel = require('tessel');
 var socket   = require('socket.io-client')('https://dcd3dbfc.ngrok.io');
 
-var button     = tessel.port.A.pin[2];
-var blue       = tessel.port.A.pin[3];
-var yellow     = tessel.port.A.pin[4];
-var red        = tessel.port.A.pin[5];
-var request    = require('request');
+var button  = tessel.port.A.pin[2];
+var blue    = tessel.port.A.pin[3];
+var yellow  = tessel.port.A.pin[4];
+var red     = tessel.port.A.pin[5];
+var request = require('request');
+
+// check running game
+request.get('https://dcd3dbfc.ngrok.io/kickr/free', function (error, response, body) {
+  console.log(body);
+
+  if (body.runningMatch) {
+    red.write(1);
+  } else if (body.minutesToNextMatch <= 20) {
+    yellow.write(1);
+  } else {
+    blue.write(1);
+  }
+});
 
 let btnPressed = false;
 
@@ -29,7 +42,8 @@ button.on('change', (value) => {
       };
 
       request.post('https://hooks.slack.com/services/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', options);
-      blue.write(1);
+      blue.write(0);
+      red.write(1);
 
       setTimeout(function () {
         btnPressed = false;
@@ -52,37 +66,8 @@ button.on('change', (value) => {
 // 	console.log('LED Red');
 // })
 
-
-const blinkBlue = () => {
-  let i = 0;
-  tessel.led[2].off();
-  tessel.led[3].on();
-  let int = setInterval(() => {
-    tessel.led[2].toggle();
-    tessel.led[3].toggle();
-    if (i === 5) {
-      clearInterval(int);
-    }
-    i++;
-  }, 1000);
-}
-
 socket.on('connect', function () {
   console.log('Connected to server!');
-});
-socket.on('event', function (data) {
-  console.log('New event received!');
-});
-
-socket.on('reserve_success', function (data) {
-  console.log(data);
-  blinkBlue();
-});
-
-socket.on('reserve_fail', function (data) {
-  console.log(data);
-  tessel.led[2].on();
-  tessel.led[3].off();
 });
 
 socket.on('disconnect', function () {
