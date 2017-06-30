@@ -12,11 +12,12 @@ var request = require('request');
 
 // check running game
 request.get('https://dcd3dbfc.ngrok.io/kickr/free', function (error, response, body) {
-  console.log(body);
 
-  if (body.runningMatch) {
+  let options = JSON.parse(body);
+
+  if (options.runningMatch) {
     red.write(1);
-  } else if (body.minutesToNextMatch <= 20) {
+  } else if (options.minutesToNextMatch <= 20) {
     yellow.write(1);
   } else {
     blue.write(1);
@@ -35,15 +36,17 @@ button.on('change', (value) => {
       console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
       console.log('body:', body); // Print the body
 
-      let options = {
-        json: {
-          text: 'test'
-        }
-      };
+      let options = JSON.parse(body);
+      if (options.attachments[0].callback_id === 'match_actions') {
+        request.post('https://hooks.slack.com/services/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', options);
+        blue.write(1);
+        red.write(0);
 
-      request.post('https://hooks.slack.com/services/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', options);
-      blue.write(0);
-      red.write(1);
+      } else {
+        blue.write(0);
+        red.write(1);
+      }
+
 
       setTimeout(function () {
         btnPressed = false;

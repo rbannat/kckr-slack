@@ -26,11 +26,11 @@ app.get('/kickr/free', function(req, res) {
     return match.id > moment().format('x');
   });
 
-  const runningMatch = isSlotFree(moment());
+  const runningMatch = getRunningMatch(moment());
 
   res.json({
     minutesToNextMatch: nextMatch ? moment(nextMatch.time).diff(moment(), 'minutes') : -1,
-    runningMatch: !!runningMatch,
+    runningMatch: runningMatch !== null,
     match: nextMatch
   });
 });
