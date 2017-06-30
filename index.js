@@ -90,7 +90,7 @@ function reserveMatch(timeString, userId, userName){
 
   if (timeString.length !== 0 && !/[0-2]?[0-9]:[0-5][0-9]/.test(timeString)) {
     return {
-      text: 'Oops, du musst eine gültige Zeit im Format HH:mm übergeben.',
+      text: 'Oops, du musst eine gültige Zeit im Format HH:mm eingeben',
       replace_original: true,
     };
   }
@@ -124,16 +124,15 @@ function reserveMatch(timeString, userId, userName){
 
     return {
       response_type: 'in_channel',
-      text: '<@' + userId + '|' + userName+ '> reserved a game at ' + time.format('HH:mm') + '! Wanna join?',
+      text: '<@' + userId + '|' + userName+ '> hat um ' + time.format('HH:mm') + ' den Kicker reserviert! Bist du dabei?',
       attachments: [{
-        text: 'Sure you wanna go down in hell?',
-        fallback: 'You are unable to choose a game',
+        text: 'Zusagen?',
         callback_id: 'join_btn',
         color: '#67a92f',
         attachment_type: 'default',
         actions: [{
           name: 'yes',
-          text: "Yes ma'am!",
+          text: "Na klar!",
           type: 'button',
           value: newMatchId,
           style: 'primary',
@@ -183,14 +182,14 @@ function joinMatch(matchId, userId, userName) {
 
   if (match.players.find(player => player === userName)) {
     return {
-      text: 'Doppelt zählt nicht!',
+      text: 'Du bist bereits für das Spiel eingetragen',
       replace_original: false,
     };
   }
 
   if (match.players.length === MAX_PLAYER) {
     return {
-      text: 'Sorry, schon ' + MAX_PLAYER + '!!',
+      text: 'Too late ;( Für das Spiel sind schon ' + MAX_PLAYER + ' Spieler eingetragen',
       replace_original: true,
     };
   }
@@ -201,6 +200,6 @@ function joinMatch(matchId, userId, userName) {
   return {
     response_type: 'in_channel',
     replace_original: false,
-    text: '<@' + userId + '|' + userName + '> spielt mit ' + match.players.filter(name => name !== userName).join(' ')
+    text: '<@' + userId + '|' + userName + '> spielt mit ' + match.players.filter(name => name !== userName).join(', ')
   };
 }
