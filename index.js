@@ -88,7 +88,7 @@ function getFreeSlots() {
 
 function reserveMatch(timeString, userId, userName){
 
-  if (timeString.length !== 5 || !/[0-2]?[0-9]:[0-5][0-9]/.test(timeString)) {
+  if (timeString.length !== 0 && !/[0-2]?[0-9]:[0-5][0-9]/.test(timeString)) {
     return {
       text: 'Oops, du musst eine gültige Zeit im Format HH:mm übergeben.',
       replace_original: true,
