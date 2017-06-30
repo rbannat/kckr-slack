@@ -139,7 +139,8 @@ function reserveMatch(timeString, userId, userName){
 
     return {
       response_type: 'in_channel',
-      text: getUserObject({userId, userName}) + ' hat um ' + time.format('HH:mm') + ' Uhr den Kicker reserviert! Bist du dabei?',
+      text: getUserObject({userId, userName}) + ' hat von ' + time.format('HH:mm') + ' Uhr bis ' +
+       time.add(20, 'minutes').format('HH:mm') +' den Kicker reserviert! Bist du dabei?',
       attachments: [{
         text: 'Sure you wanna go down in hell?',
         fallback: 'You are unable to choose a game',
@@ -148,7 +149,7 @@ function reserveMatch(timeString, userId, userName){
         attachment_type: 'default',
         actions: [{
           name: 'yes',
-          text: "Yes ma'am!",
+          text: "Bin dabei!",
           type: 'button',
           value: newMatchId,
           style: 'primary'
@@ -204,7 +205,7 @@ function cancelMatch(matchId, userId, userName) {
     });
     return {
       text: 'Hey ' + match.players.map(player => getUserObject(player)).join(', ') +
-        ' das Match um ' + match.time.format('HH:mm') + ' Uhr wurde gecancelled',
+        ', das Match um ' + match.time.format('HH:mm') + ' Uhr wurde gecancelled!',
       replace_original: true,
     }
   } else {
@@ -231,7 +232,7 @@ function joinMatch(matchId, userId, userName) {
 
   if (match.players.find(player => player.userId === userId)) {
     return {
-      text: 'Du bist bereits für das Spiel eingetragen',
+      text: 'Du bist bereits für das Spiel eingetragen!',
       replace_original: false,
     };
   }
