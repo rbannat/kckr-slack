@@ -140,16 +140,15 @@ function reserveMatch(timeString, userId, userName){
     return {
       response_type: 'in_channel',
       text: getUserObject({userId, userName}) + ' hat von ' + time.format('HH:mm') + ' Uhr bis ' +
-       time.add(20, 'minutes').format('HH:mm') +' den Kicker reserviert! Bist du dabei?',
+       time.add(20, 'minutes').format('HH:mm') + ' Uhr den Kicker reserviert! Bist du dabei?',
       attachments: [{
-        text: 'Sure you wanna go down in hell?',
         fallback: 'You are unable to choose a game',
         callback_id: 'match_actions',
         color: '#67a92f',
         attachment_type: 'default',
         actions: [{
           name: 'yes',
-          text: "Bin dabei!",
+          text: "Bin dabei",
           type: 'button',
           value: newMatchId,
           style: 'primary'
@@ -197,6 +196,7 @@ function cancelMatch(matchId, userId, userName) {
       replace_original: false,
     }
   }
+
   // check owner
   if (match.createdBy.userId === userId) {
     // delete match
@@ -210,7 +210,7 @@ function cancelMatch(matchId, userId, userName) {
     }
   } else {
     return {
-      text: 'Du bist nicht der owner!',
+      text: 'Du kannst du Spiele absagen, die du selbst angelegt hast!',
       replace_original: false,
     }
   }
