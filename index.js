@@ -11,6 +11,7 @@ var clientId = process.env.CLIENT_ID;
 var clientSecret = process.env.CLIENT_SECRET;
 
 var app = express();
+var socket;
 app.use(bodyParser.urlencoded({ extended: true }));
 
 
@@ -61,6 +62,10 @@ server.listen(PORT, function () {
   console.log('Example app listening on port ' + PORT);
 });
 
+io.on('connection', (socket) => {
+  console.log('a user connected');
+});
+
 app.post('/kickr/reserve', function(req, res) {
 
   var requiredMatchTime = moment(req.body.text, 'HH:mm');
@@ -75,6 +80,8 @@ app.post('/kickr/reserve', function(req, res) {
         req.body.user_name
       ]
     });
+
+    io.emit('reserve_success', { data: 'reserved successful' });
 
     res.json({
       response_type: 'in_channel',
@@ -145,7 +152,6 @@ app.post('/kickr/join', function(req, res) {
       replace_original: false,
     })
   }
-
 
   if (match.players.length === MAX_PLAYER) {
     return res.json({
