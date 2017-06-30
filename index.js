@@ -17,11 +17,6 @@ var server = require('http').Server(app);
 var io = require('socket.io')(server);
 var PORT=4390;
 
-server.listen(PORT, function () {
-  // Callback triggered when server is successfully listening. Hurray!
-  console.log('Example app listening on port ' + PORT);
-});
-
 var db = [{
   time: '14:00',
   createdBy: 'joa',
