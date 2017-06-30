@@ -137,7 +137,6 @@ function reserveMatch(timeString, userId, userName){
   if (existingMatch) {
     return {
       text: 'Sorry, um ' + time.format('HH:mm') + ' Uhr ist der Raum bereits von ' + getUserObject(existingMatch.createdBy) + ' belegt!',
-      response_type: 'in_channel',
       attachments: [{
         fallback: 'Upgrade your Slack client to use messages like these.',
         color: '#67a92f',
