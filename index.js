@@ -106,13 +106,13 @@ function reserveMatch(timeString, userId, userName){
       text: 'Oops, du musst eine gültige Zeit im Format HH:mm eingeben',
       replace_original: true,
     };
+  }
 
-    if (time.isBefore(moment())) {
-      return {
-        text: 'Oops, wähle einen Zeitpunkt in der Zunkunft',
-        replace_original: true,
-      };
-    }
+  if (timeString.length > 0 && time.isBefore(moment())) {
+    return {
+      text: 'Oops, wähle einen Zeitpunkt in der Zunkunft',
+      replace_original: true,
+    };
   }
 
   const match = isSlotFree(time);
