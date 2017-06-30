@@ -65,7 +65,7 @@ app.post('/kickr/reserve', function(req, res) {
 });
 
 function reserve(timeString, userId, userName){
-  var time = moment(timeString, 'HH:mm');
+  var time = timeString ? moment(timeString, 'HH:mm') : moment();
   const match = isSlotFree(time);
 
   if (!match) {
@@ -85,7 +85,7 @@ function reserve(timeString, userId, userName){
 
     return {
       response_type: 'in_channel',
-      text: '<@' + userId + '|' + userName+ '> reserved a game at ' + timeString.split(' ')[0] + '! Wanna join?',
+      text: '<@' + userId + '|' + userName+ '> reserved a game at ' + time.format('HH:mm') + '! Wanna join?',
       attachments: [{
         text: 'Sure you wanna go down in hell?',
         fallback: 'You are unable to choose a game',
@@ -104,7 +104,7 @@ function reserve(timeString, userId, userName){
     };
   } else {
     return {
-      text: 'Sorry, um ' + timeString + ' Uhr ist der Raum bereits von <@' + userId + '|' + userName + '> belegt!',
+      text: 'Sorry, um ' + time.format('HH:mm') + ' Uhr ist der Raum bereits von <@' + userId + '|' + userName + '> belegt!',
       response_type: 'in_channel',
       attachments: [
         {
