@@ -199,7 +199,7 @@ function cancelMatch(matchId, userId, userName) {
       return match.createdBy.userId !== userId;
     });
     return {
-      text: 'Match wurde gecancelled',
+      text: 'Hey ' + match.players.map(player => '<@' + player.userId + '|' + player.userName + '>').join(', ') + ' das Match um ' + match.time.format('HH:mm') + ' wurde gecancelled',
       replace_original: true,
     }
   } else {
