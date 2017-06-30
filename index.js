@@ -3,7 +3,7 @@ var express = require('express');
 var request = require('request');
 var bodyParser = require('body-parser');
 var moment = require('moment');
-const MAX_PLAYER = 3;
+const MAX_PLAYER = 2;
 
 require('dotenv').config();
 
@@ -14,9 +14,7 @@ var PORT=4390;
 var matches = [];
 
 app.use(bodyParser.urlencoded({ extended: true }));
-server.listen(PORT, function () {
-  console.log('Example app listening on port ' + PORT);
-});
+server.listen(PORT);
 
 io.on('connection', (socket) => {
   console.log('a user connected');
@@ -35,6 +33,11 @@ app.get('/kickr/free', function(req, res) {
 });
 
 app.post('/kickr/reserve', function(req, res) {
+
+  if (req.body.text === 'list') {
+    return res.json(getMatchList());
+  }
+
   res.json(reserveMatch(req.body.text, req.body.user_id, req.body.user_name));
 });
 
@@ -93,7 +96,27 @@ function checkTimeString(timeString) {
   return !/[0-2]?[0-9]:[0-5][0-9]/.test(timeString);
 }
 
+function getUserObject(user) {
+  return '<@' + user.userId + '|' + user.userName + '>';
+}
+
+function getMatchList() {
+  if (!matches.length) {
+    return { text: 'Keine Reservierungen für heute' };
+  }
+
+  let list = 'Reservierungen:\n';
+  list += matches.map((match, index) => {
+    return '\n' + (index+1) + '. ' + match.time.format('HH:mm') + ' Uhr, Teilnehmer:  ' +
+      match.players.map(player => getUserObject(player)).join(' ')
+  });
+
+  return { text: list };
+}
+
 function reserveMatch(timeString, userId, userName){
+
+  const time = timeString ? moment(timeString, 'HH:mm') : moment();
 
   if (timeString.length !== 0 && checkTimeString(timeString)) {
     return {
@@ -102,89 +125,80 @@ function reserveMatch(timeString, userId, userName){
     };
   }
 
-  const time = timeString ? moment(timeString, 'HH:mm') : moment();
-  const match = isSlotFree(time);
-
-  if (time.isBefore(moment())) {
+  if (timeString.length > 0 && time.isBefore(moment())) {
     return {
       text: 'Oops, wähle einen Zeitpunkt in der Zunkunft',
       replace_original: true,
     };
   }
 
-  if (!match) {
+  const existingMatch = isSlotFree(time);
 
-    const newMatchId = time.format('x');
-    matches.push({
-      id: newMatchId,
-      time: time,
-      createdBy: {
-        userId,
-        userName,
-      },
-      players: [
-        {
-          userId,
-          userName
-        }
-      ]
-    });
-
-    io.emit('reserve_success', { data: 'reserved successful' });
-
+  if (existingMatch) {
     return {
+      text: 'Sorry, um ' + time.format('HH:mm') + ' Uhr ist der Raum bereits von ' + getUserObject(existingMatch.createdBy) + ' belegt!',
       response_type: 'in_channel',
-      text: '<@' + userId + '|' + userName+ '> hat um ' + time.format('HH:mm') + ' den Kicker reserviert! Bist du dabei?',
       attachments: [{
-        text: 'Sure you wanna go down in hell?',
-        fallback: 'You are unable to choose a game',
-        callback_id: 'match_actions',
+        fallback: 'Upgrade your Slack client to use messages like these.',
         color: '#67a92f',
         attachment_type: 'default',
+        callback_id: 'select_times',
         actions: [{
-          name: 'yes',
-          text: "Yes ma'am!",
-          type: 'button',
-          value: newMatchId,
-          style: 'primary'
-        },
-          {
-            name: 'cancel',
-            text: "Cancel",
-            type: 'button',
-            value: newMatchId,
-            style: 'danger'
-          }]
+          name: 'times_list',
+          text: 'Wähle eine andere Zeit!',
+          type: 'select',
+          options: getFreeSlots()
+        }],
+        response_url: process.env.HOST + '/kickr/reserve'
       }]
     };
-  } else {
-    return {
-      text: 'Sorry, um ' + time.format('HH:mm') + ' Uhr ist der Raum bereits von <@' + match.createdBy.userId + '|' + match.createdBy.userName + '> belegt!',
-      response_type: 'in_channel',
-      attachments: [
-        {
-          fallback: 'Upgrade your Slack client to use messages like these.',
-          color: '#67a92f',
-          attachment_type: 'default',
-          callback_id: 'select_times',
-          actions: [
-            {
-              name: 'times_list',
-              text: 'Wähle eine andere Zeit!',
-              type: 'select',
-              options: getFreeSlots()
-            }
-          ],
-          response_url: process.env.HOST + '/kickr/reserve'
-        }
-      ]
-    };
   }
+
+  const newMatchId = time.format('x');
+  matches.push({
+    id: newMatchId,
+    time: time,
+    createdBy: {
+      userId,
+      userName,
+    },
+    players: [{
+      userId,
+      userName
+    }]
+  });
+
+  io.emit('reserve_success', { data: 'reserved successful' });
+
+  return {
+    response_type: 'in_channel',
+    text: getUserObject({userId, userName}) + ' hat von ' + time.format('HH:mm') + ' Uhr bis ' +
+     time.add(20, 'minutes').format('HH:mm') + ' Uhr den Kicker reserviert! Bist du dabei?',
+    attachments: [{
+      fallback: 'You are unable to choose a game',
+      callback_id: 'match_actions',
+      color: '#67a92f',
+      attachment_type: 'default',
+      actions: [{
+        name: 'yes',
+        text: "Bin dabei",
+        type: 'button',
+        value: newMatchId,
+        style: 'primary'
+      }, {
+        name: 'cancel',
+        text: "Spiel absagen",
+        type: 'button',
+        value: newMatchId,
+        style: 'danger'
+      }]
+    }]
+  };
 }
+
 
 function cancelMatch(matchId, userId, userName) {
   const match = matches.find((match) => match.id === matchId);
-  console.log(match, matchId, userId);
 
   if (!match) {
     return {
@@ -192,21 +206,25 @@ function cancelMatch(matchId, userId, userName) {
       replace_original: false,
     }
   }
+
   // check owner
   if (match.createdBy.userId === userId) {
+
     // delete match
     matches = matches.filter((match) => {
       return match.createdBy.userId !== userId;
     });
+
     return {
-      text: 'Hey ' + match.players.map(player => '<@' + player.userId + '|' + player.userName + '>').join(', ') + ' das Match um ' + match.time.format('HH:mm') + ' wurde gecancelled',
+      text: 'Hey ' + match.players.map(player => getUserObject(player)).join(', ') +
+        ', das Match um ' + match.time.format('HH:mm') + ' Uhr wurde abgesagt!',
       replace_original: true,
     }
-  } else {
-    return {
-      text: 'Du bist nicht der owner!',
-      replace_original: false,
-    }
+  }
+
+  return {
+    text: 'Du kannst nur Spiele absagen, die du selbst angelegt hast!',
+    replace_original: false,
   }
 }
 
@@ -226,7 +244,7 @@ function joinMatch(matchId, userId, userName) {
 
   if (match.players.find(player => player.userId === userId)) {
     return {
-      text: 'Du bist bereits für das Spiel eingetragen',
+      text: 'Du bist bereits für das Spiel eingetragen!',
       replace_original: false,
     };
   }
@@ -234,7 +252,8 @@ function joinMatch(matchId, userId, userName) {
   if (match.players.length === MAX_PLAYER) {
 
     let text = 'Perfekt, ihr seid vollständig!\n';
-    text += 'Teilnehmer: ' + match.players.join(', ') + ', ' + userName + ' \n';
+    text += 'Teilnehmer: ' + match.players.map(player => getUserObject(player)).join(', ') + ', '
+    text += getUserObject({userName, userId}) + ' \n';
     text += 'Uhrzeit: ' + match.time.format('HH:mm') + ' Uhr'
 
     return {
@@ -247,7 +266,7 @@ function joinMatch(matchId, userId, userName) {
         actions: [
           {
             name: 'cancel',
-            text: "Cancel",
+            text: "Spiel absagen",
             type: 'button',
             value: matchId,
             style: 'danger'
@@ -262,6 +281,10 @@ function joinMatch(matchId, userId, userName) {
   return {
     response_type: 'in_channel',
     replace_original: false,
-    text: '<@' + userId + '|' + userName + '> spielt mit ' + match.players.filter(player => player.userId !== userId).map(player => player.userName).join(', ')
+    text: getUserObject({userName, userId}) + ' spielt mit ' +
+      match.players
+        .filter(player => player.userId !== userId)
+        .map(player => getUserObject(player))
+        .join(', ')
   };
 }
