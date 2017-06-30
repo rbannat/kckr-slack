@@ -152,7 +152,7 @@ function reserveMatch(timeString, userId, userName){
             name: 'cancel',
             text: "Cancel",
             type: 'button',
-            value: matchId,
+            value: newMatchId,
             style: 'danger'
           }]
       }]
