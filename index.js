@@ -34,31 +34,13 @@ app.get('/kickr/free', function(req, res) {
   });
 });
 
-function parseParams(paramString) {
-  return paramString.split(' ');
-}
-
 app.post('/kickr/reserve', function(req, res) {
-  const params = parseParams(req.body.text);
-  console.log(params);
-  if(params.length === 1) {
-    res.json(reserveMatch(params[0], req.body.user_id, req.body.user_name));
-  } else if(params[1] === 'cancel') {
-    res.json(cancelMatch(params[0], req.body.user_id, req.body.user_name));
-  } else {
-    res.json({
-      text: 'Oops, ich habe dich nicht verstanden o.O',
-      replace_original: false,
-    });
-  }
-
+  res.json(reserveMatch(req.body.text, req.body.user_id, req.body.user_name));
 });
 
 app.post('/kickr/action', function(req, res) {
   const json = JSON.parse(req.body.payload);
   const actionId = json.callback_id;
-
-  console.log(json);
 
   switch (actionId) {
     case 'match_actions':
@@ -67,9 +49,6 @@ app.post('/kickr/action', function(req, res) {
       } else {
         res.json(joinMatch(json.actions[0].value, json.user.id, json.user.name));
       }
-      break;
-    case 'cancel_btn':
-      res.json(cancelMatch(json.actions[0].selected_options[0].value, json.user.id, json.user.name));
       break;
     case 'select_times':
       res.json(reserveMatch(json.actions[0].selected_options[0].value, json.user.id, json.user.name));
