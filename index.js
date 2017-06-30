@@ -3,6 +3,7 @@ var express = require('express');
 var request = require('request');
 var bodyParser = require('body-parser');
 var moment = require('moment');
+const MAX_PLAYER = 4;
 
 require('dotenv').config();
 
@@ -20,8 +21,7 @@ var PORT=4390;
 var db = [{
   time: '14:00',
   createdBy: 'joa',
-  players: ['rene', 'stefan'],
-  maxPlayers: 4
+  players: ['rene', 'stefan']
 }];
 
 function nearestFutureMinutes(interval, someMoment) {
@@ -30,6 +30,7 @@ function nearestFutureMinutes(interval, someMoment) {
 }
 
 function isSlotFree(requiredMatchTime) {
+  console.log(requiredMatchTime);
   return db.find(match => {
     const matchStart = moment(match.time, 'HH:mm');
     const matchEnd = moment(matchStart).add(20, 'minutes');
@@ -55,6 +56,11 @@ function getFreeSlots() {
   return freeSlots;
 }
 
+server.listen(PORT, function () {
+  // Callback triggered when server is successfully listening. Hurray!
+  console.log('Example app listening on port ' + PORT);
+});
+
 app.post('/kickr/reserve', function(req, res) {
 
   var requiredMatchTime = moment(req.body.text, 'HH:mm');
@@ -67,8 +73,7 @@ app.post('/kickr/reserve', function(req, res) {
       createdBy: req.body.user_name,
       players: [
         req.body.user_name
-      ],
-      maxPlayers: req.body.text.split(' ')[1] || 4
+      ]
     });
 
     res.json({
@@ -125,9 +130,9 @@ app.post('/kickr/join', function(req, res) {
   }
 
 
-  if (match.players.length === match.maxPlayers) {
+  if (match.players.length === MAX_PLAYER) {
     return res.json({
-      text: 'Sorry, schon ' + match.maxPlayers + '!!',
+      text: 'Sorry, schon ' + MAX_PLAYER + '!!',
       replace_original: true,
     })
   }
