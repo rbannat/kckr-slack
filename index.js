@@ -73,8 +73,8 @@ function isSlotFree(requiredMatchTime) {
     const matchStart = moment(match.time, 'HH:mm');
     const matchEnd = moment(matchStart).add(20, 'minutes');
     const isReserved = requiredMatchTime.isBetween(matchStart, matchEnd) || requiredMatchTime.isSame(matchStart);
-    return isReserved ? match : null;
-  });
+    return !isReserved;
+  }) || null;
 }
 
 
