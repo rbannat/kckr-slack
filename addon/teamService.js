@@ -6,7 +6,6 @@ const dbPath = './data/mySuperSecureTeamDb.json';
 
 class TeamServiceModel {
   constructor() {
-    var self = this;
     this.teams = {};
     this.serializeDataFromDb();
   }
@@ -21,7 +20,7 @@ class TeamServiceModel {
 
       let teams = JSON.parse(data);
 
-      for (var key in teams) {
+      for (let key in teams) {
         let currentTeam = teams[key];
         serializedTeams[key] = new Team(currentTeam.name, currentTeam.location, currentTeam.rating, currentTeam.stats, currentTeam.member);
       }
@@ -55,7 +54,7 @@ class TeamServiceModel {
       this.teams[name] = data;
       this.constructor.writeDb(this.teams);
 
-      for(var i = 0; i < teamMembers.length; i++) {
+      for(let i = 0; i < teamMembers.length; i++) {
         let m1 = UserService.getUser(teamMembers[i]);
         if (m1) {
           m1.addTeam(name);

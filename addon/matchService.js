@@ -1,13 +1,9 @@
-const fs = require('fs');
-const RatingService = require('./ratingService');
-
-const dbPath = './data/mySuperSecureMatchDb.json';
-
-class MatchService {
+class MatchServiceModel {
   constructor() {
     this.matches = [];
   }
-
 }
+
+const MatchService = new MatchServiceModel();
 
 module.exports = MatchService;
