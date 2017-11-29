@@ -1,7 +1,5 @@
 'use strict';
 
-console.log('required')
-
 const fs = require('fs');
 const User = require('./model/User');
 
@@ -9,11 +7,9 @@ const dbPath = './data/mySuperSecureUserDb.json';
 
 class UserServiceModel {
   constructor() {
-
     this.initialized = false;
     this.users = {};
     this.serializeDataFromDb();
-    console.log('UserService constructor executed');
   }
 
   serializeDataFromDb(callback) {
