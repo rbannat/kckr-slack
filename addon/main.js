@@ -34,7 +34,7 @@ class Main {
     }
   }
 
-  challange(challenger, team, time) {
+  challenge(challenger, team, time) {
 
   }
 
