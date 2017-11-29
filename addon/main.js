@@ -1,6 +1,7 @@
-var UserService = require('./userService');
-var TeamService = require('./TeamService');
-var RatingService = require('./ratingService');
+const UserService = require('./userService');
+const TeamService = require('./teamService');
+const RatingService = require('./ratingService');
+const MatchService = require('./matchService');
 
 class Main {
 
@@ -8,18 +9,18 @@ class Main {
     this.userService = UserService;
     this.teamService = TeamService;
     this.ratingService = RatingService;
-    this.matchService = null;
+    this.matchService = MatchService;
 
     // testing methods
     let self = this;
     setTimeout(() => {
 
-      self.userService.addUser('Paul', 'Berlin');
-      self.userService.addUser('Jens', 'Berlin');
-      self.userService.addUser('Rene', 'Berlin');
-      self.userService.addUser('Stefan', 'Berlin');
-      self.teamService.addTeam('Bumsfallarah', 'Berlin', 'Paul', 'Jens');
-      self.teamService.addTeam('Kloetentroeten', 'Berlin', 'Rene', 'Stefan');
+      self.register('Paul', 'Berlin');
+      self.register('Jens', 'Berlin');
+      self.register('Rene', 'Berlin');
+      self.register('Stefan', 'Berlin');
+      self.register('Bumsfallarah', 'Berlin', 'Paul', 'Jens');
+      self.register('Kloetentroeten', 'Berlin', 'Rene', 'Stefan');
       console.log('alluser', UserSerice.getAllUsers());
       console.log('allTeams', TeamSerice.getAllTeams());
     }, 500);
