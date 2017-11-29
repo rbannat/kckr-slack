@@ -1,15 +1,16 @@
-# kickr
+# Kickr
+
+## Get Started
 
 1. `npm install`
-2. create `.env`
-3. `nodemon index.js`
+1. `touch .env`
+1. edit `.env`
+1. `npm start`
+1. go to http://localhost:4390
 
-.env
+## .env settings
 ```
 CLIENT_ID=<MY ID>
 CLIENT_SECRET=<MY SECRET>
-HOST=
+HOST=<HOST_URL>
 ```
-
-
-TODOs
