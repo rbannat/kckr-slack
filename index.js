@@ -3,14 +3,15 @@ var express = require('express');
 var request = require('request');
 var bodyParser = require('body-parser');
 var moment = require('moment');
-const MAX_PLAYER = 3;
-
 require('dotenv').config();
+
+const MAX_PLAYER = 3;
 
 var app = express();
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
 var PORT=4390;
+
 var matches = [];
 
 app.use(bodyParser.urlencoded({ extended: true }));
