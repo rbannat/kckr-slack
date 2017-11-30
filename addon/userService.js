@@ -22,7 +22,7 @@ class UserServiceModel {
 
       let users = JSON.parse(data);
 
-      for (var key in users) {
+      for (let key in users) {
         let currentUser = users[key];
         serializedUsers[key] = new User(currentUser.name, currentUser.location, currentUser.rating, currentUser.stats, currentUser.teams);
       }
@@ -36,9 +36,11 @@ class UserServiceModel {
     });
   }
 
-  writeDb(data) {
+  writeDb() {
+    let self = this;
     if (this.initialized === true) {
-      fs.writeFile(dbPath, JSON.stringify(data), (error) => {
+      let data = JSON.stringify(this.users);
+      fs.writeFile(dbPath, data, (error) => {
         if (error !== null) {
           throw new Error('fs.writeFile in Userservice throws an error', error);
         }
@@ -56,7 +58,7 @@ class UserServiceModel {
     };
     if (typeof this.users[name] === 'undefined') {
       this.users[name] = new User(name, location);
-      this.writeDb(this.users);
+      this.writeDb();
       response = {
         data: this.users[name],
         status: 'success',
