@@ -22,7 +22,7 @@ class TeamServiceModel {
 
       for (let key in teams) {
         let currentTeam = teams[key];
-        serializedTeams[key] = new Team(currentTeam.name, currentTeam.location, currentTeam.rating, currentTeam.stats, currentTeam.member);
+        serializedTeams[key] = new Team(currentTeam.name, currentTeam.location, currentTeam.member, currentTeam.rating, currentTeam.stats);
       }
 
       self.teams = serializedTeams;
@@ -34,12 +34,13 @@ class TeamServiceModel {
     });
   }
 
-  static writeDb(data) {
-    fs.writeFile(dbPath, JSON.stringify(data), (error) => {
+  writeDb() {
+    let data = JSON.stringify(this.teams);
+    fs.writeFile(dbPath, data, (error) => {
       if(error !== null) {
         throw new Error('fs.writeFile in Teamservice throws an error', error);
       }
-    })
+    });
   }
 
   addTeam(name, location, member1, member2) {
@@ -52,7 +53,7 @@ class TeamServiceModel {
       let teamMembers = [member1, member2];
       let data = new Team(name, location, teamMembers);
       this.teams[name] = data;
-      this.constructor.writeDb(this.teams);
+      this.writeDb();
 
       for(let i = 0; i < teamMembers.length; i++) {
         let m1 = UserService.getUser(teamMembers[i]);
