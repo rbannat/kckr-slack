@@ -123,6 +123,11 @@ app.post('/commands', (req, res) => {
     return res.send(getMatchList());
   }
   
+  if (text === 'scores') {
+    return res.send(getScores());
+  }
+  
+  // default to table reservation
   return res.send(reserveMatch(text || '', req.body.user_id, req.body.user_name));
   
 } else {
@@ -260,6 +265,20 @@ function getRunningMatch(requiredMatchTime) {
   
     return { text: list };
   }  
+
+  function getScores() {
+    
+    let teamScores = 'Team Scores:\n';
+    teamScores += service.getTeamScores().slice(0,9).map((team, index) => {
+      return '\n' + (index+1) + '. ' + team.name + ' ' + team.rating;
+    });
+
+    let playerScores = 'Player Scores:\n';
+    playerScores += service.getPlayerScores().slice(0,9).map((player, index) => {
+      return '\n' + (index+1) + '. ' + player.name + ' ' + player.rating;
+    });
+    return { text: teamScores + '\n \n' + playerScores };
+  }
 
 function reserveMatch(timeString, userId, userName){
   
