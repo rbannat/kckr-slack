@@ -23,6 +23,7 @@ app.use(bodyParser.json());
 init();
 
 const matches = {};
+const reservedMatches = [];
 
 app.get('/', (req, res) => {
   res.send('<h2>The Kickr Slack app is running</h2> <p>Follow the' +
@@ -214,7 +215,7 @@ function getRunningMatch(requiredMatchTime) {
   
     requiredMatchTime = requiredMatchTime.format('x');
   
-    return matches.find(match => {
+    return reservedMatches.find(match => {
       const matchStart = moment(match.time).format('x');
       const matchEnd = moment(match.time).add(20, 'minutes').format('x');
       return (requiredMatchTime >= matchStart && requiredMatchTime <= matchEnd);
@@ -247,12 +248,12 @@ function getRunningMatch(requiredMatchTime) {
   }
   
   function getMatchList() {
-    if (!matches.length) {
+    if (!reservedMatches.length) {
       return { text: 'Keine Reservierungen für heute' };
     }
   
     let list = 'Reservierungen:\n';
-    list += matches.map((match, index) => {
+    list += reservedMatches.map((match, index) => {
       return '\n' + (index+1) + '. ' + match.time.format('HH:mm') + ' Uhr, Teilnehmer:  ' +
         match.players.map(player => getUserObject(player)).join(' ')
     });
@@ -300,7 +301,7 @@ function reserveMatch(timeString, userId, userName){
   }
   
   const newMatchId = time.format('x');
-  matches.push({
+  reservedMatches.push({
     id: newMatchId,
     time: time,
     createdBy: {
@@ -341,7 +342,7 @@ function reserveMatch(timeString, userId, userName){
 
 
 function cancelMatch(matchId, userId, userName) {
-  const match = matches.find((match) => match.id === matchId);
+  const match = reservedMatches.find((match) => match.id === matchId);
   
   if (!match) {
     return {
@@ -354,7 +355,7 @@ function cancelMatch(matchId, userId, userName) {
   if (match.createdBy.userId === userId) {
     
     // delete match
-    matches = matches.filter((match) => {
+    reservedMatches = reservedMatches.filter((match) => {
       return match.createdBy.userId !== userId;
     });
     
@@ -372,7 +373,7 @@ function cancelMatch(matchId, userId, userName) {
 }
 
 function joinMatch(matchId, userId, userName) {
-  const match = matches.find(match => parseInt(match.id) === parseInt(matchId));
+  const match = reservedMatches.find(match => parseInt(match.id) === parseInt(matchId));
   
   if (!match) {
     return { text: 'ID falsch' };
@@ -419,7 +420,7 @@ function joinMatch(matchId, userId, userName) {
     }
     
     match.players.push({userId, userName});
-    matches[matchId] = match;
+    reservedMatches[matchId] = match;
     
     return {
       response_type: 'in_channel',
@@ -444,7 +445,7 @@ function joinMatch(matchId, userId, userName) {
     
     requiredMatchTime = requiredMatchTime.format('x');
     
-    return matches.find(match => {
+    return reservedMatches.find(match => {
       const matchStart = moment(match.time).format('x');
       const matchEnd = moment(match.time).add(20, 'minutes').format('x');
       return (requiredMatchTime >= matchStart && requiredMatchTime <= matchEnd);
