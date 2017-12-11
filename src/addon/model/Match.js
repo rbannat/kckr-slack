@@ -61,7 +61,7 @@ module.exports = class Match {
   }
 
   getWinner() {
-    let checkResultArray = this.finalResult.split(';');
+    let checkResultArray = this.finalResult.split(':');
     if(checkResultArray[0] > checkResultArray[1]) {
       return this.challenger;
     }
@@ -69,7 +69,7 @@ module.exports = class Match {
   }
 
   getLoser() {
-    let checkResultArray = this.finalResult.split(';');
+    let checkResultArray = this.finalResult.split(':');
     if(checkResultArray[0] > checkResultArray[1]) {
       return this.opponent;
     }

@@ -5,7 +5,8 @@ const bodyParser = require('body-parser');
 const moment = require('moment');
 const qs = require('querystring');
 const debug = require('debug')('kickr');
-const tokenizer = require('string-tokenizer')
+const tokenizer = require('string-tokenizer');
+const service = require('./addon/main');
 
 const {WEBHOOK_URL, PORT, SLACK_VERIFICATION_TOKEN, SLACK_ACCESS_TOKEN} = process.env;
 
@@ -159,7 +160,23 @@ app.post('/interactive-component', (req, res) => {
         if (body.actions[0].value === 'submit') {
           res.send({text: 'Waiting for match do be recorded ...'});
           
-          //TODO: matchService.enterResult();
+          let team1, team2, team1Name, team2Name;
+          if(match.players.length === 4) {
+            team1Name = match.players[0] + '.' + match.players[1];
+            team2Name = match.players[1] + '.' + match.players[2];
+            team1 = service.register(match.players[0] + '.' + match.players[1], 'Berlin', match.players[0], match.players[1]).data;
+            team2 = service.register(match.players[1] + '.' + match.players[2], 'Berlin', match.players[1], match.players[2]).data;
+          } else {
+            team1Name = match.players[0];
+            team2Name = match.players[1];
+            team1 = service.register(match.players[0], 'Berlin', match.players[0]).data;
+            team2 = service.register(match.players[1], 'Berlin', match.players[1]).data;
+          }
+
+          service.challenge('new', {challenger: team1Name, opponent: team2Name});
+          service.challenge('accept', {opponent: team2Name});
+          service.challenge('enterResult', {party: team1Name, result: match.score[0] + ':' + match.score[1], party2: team2Name});
+          let result = service.challenge('enterResult', {party: team2Name, result: match.score[1] + ':' + match.score[0], party2: team1Name});
           
           axios.post(WEBHOOK_URL, {
             text: match.gameMode === '1vs1' ?

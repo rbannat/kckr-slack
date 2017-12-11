@@ -1,8 +1,9 @@
 const fs = require('fs');
+const path = require('path');
 const Team = require('./model/Team');
 const UserService = require('./userService');
 
-const dbPath = './data/mySuperSecureTeamDb.json';
+const dbPath = 'data/mySuperSecureTeamDb.json';
 
 class TeamServiceModel {
   constructor() {
@@ -13,7 +14,7 @@ class TeamServiceModel {
   serializeDataFromDb(callback) {
     let self = this;
     let serializedTeams = {};
-    fs.readFile(dbPath, 'utf8', (error, data) => {
+    fs.readFile(path.join(__dirname, dbPath), (error, data) => {
       if(error) {
         throw new Error('fs.readfile in TeamService throws an error', error);
       }
@@ -36,8 +37,8 @@ class TeamServiceModel {
 
   writeDb() {
     let data = JSON.stringify(this.teams);
-    fs.writeFile(dbPath, data, (error) => {
-      if(error !== null) {
+    fs.writeFile(path.join(__dirname, dbPath), data, (error) => {
+      if(error) {
         throw new Error('fs.writeFile in Teamservice throws an error', error);
       }
     });

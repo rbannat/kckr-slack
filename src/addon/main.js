@@ -25,14 +25,14 @@ class Main {
       self.challenge('new', {challenger: 'Bumsfallarah', opponent: 'Kloetentroeten'});
       self.challenge('change', {opponent: 'Kloetentroeten'});
       self.challenge('accept', {opponent: 'Bumsfallarah'});
-                  self.challenge('enterResult', {party: 'Bumsfallarah', result: '2:1', party2: 'Kloetentroeten'});
+      self.challenge('enterResult', {party: 'Bumsfallarah', result: '2:1', party2: 'Kloetentroeten'});
       self.challenge('enterResult', {party: 'Kloetentroeten', result: '2:1', party2: 'Bumsfallarah'});
       self.challenge('enterResult', {party: 'Kloetentroeten', result: '2:1', party2: 'Bumsfallarah'});
       let match = self.challenge('enterResult', {party: 'Bumsfallarah', result: '1:2', party2: 'Kloetentroeten'});
-      console.log(match);
+      //console.log(match);
       // console.log('alluser', self.userService.getAllUsers());
       // console.log('allTeams', self.teamService.getAllTeams());
-      console.log(this);
+      //console.log(this);
     }, 500);
   }
 
@@ -67,4 +67,4 @@ class Main {
   }
 }
 
-const kickrExt = new Main();
+module.exports = new Main();

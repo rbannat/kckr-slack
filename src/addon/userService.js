@@ -1,9 +1,10 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 const User = require('./model/User');
 
-const dbPath = './data/mySuperSecureUserDb.json';
+const dbPath = 'data/mySuperSecureUserDb.json';
 
 class UserServiceModel {
   constructor() {
@@ -15,7 +16,7 @@ class UserServiceModel {
   serializeDataFromDb(callback) {
     let self = this;
     let serializedUsers = {};
-    fs.readFile(dbPath, 'utf8', (error, data) => {
+    fs.readFile(path.join(__dirname, dbPath), (error, data) => {
       if(error) {
         throw new Error('fs.readfile in UserService throws an error', error);
       }
@@ -40,8 +41,8 @@ class UserServiceModel {
     let self = this;
     if (this.initialized === true) {
       let data = JSON.stringify(this.users);
-      fs.writeFile(dbPath, data, (error) => {
-        if (error !== null) {
+      fs.writeFile(path.join(__dirname, dbPath), data, (error) => {
+        if (error) {
           throw new Error('fs.writeFile in Userservice throws an error', error);
         }
       });
