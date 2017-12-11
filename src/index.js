@@ -158,14 +158,14 @@ app.post('/interactive-component', (req, res) => {
         const match = matches[body.user.id];
         
         if (body.actions[0].value === 'submit') {
-          res.send({text: 'Waiting for match do be recorded ...'});
+          res.send({text: 'Waiting for match to be recorded ...'});
           
           let team1, team2, team1Name, team2Name;
           if(match.players.length === 4) {
             team1Name = match.players[0] + '.' + match.players[1];
             team2Name = match.players[1] + '.' + match.players[2];
-            team1 = service.register(match.players[0] + '.' + match.players[1], 'Berlin', match.players[0], match.players[1]).data;
-            team2 = service.register(match.players[1] + '.' + match.players[2], 'Berlin', match.players[1], match.players[2]).data;
+            team1 = service.register(team1Name, 'Berlin', match.players[0], match.players[1]).data;
+            team2 = service.register(team2Name, 'Berlin', match.players[1], match.players[2]).data;
           } else {
             team1Name = match.players[0];
             team2Name = match.players[1];
@@ -180,7 +180,7 @@ app.post('/interactive-component', (req, res) => {
           
           axios.post(WEBHOOK_URL, {
             text: match.gameMode === '1vs1' ?
-            `<@${body.user.id}> recorded a match: <@${match.players[0]}>, <@${match.players[1]}> ${match.score.join(':')}`:
+            `<@${body.user.id}> recorded a match: <@${match.players[0]}> vs <@${match.players[1]}> ${match.score.join(':')}`:
             `<@${body.user.id}> recorded a match: <@${match.players[0]}>, <@${match.players[1]}>  vs <@${match.players[2]}>, <@${match.players[3]}> ${match.score.join(':')}`
           });
           axios.post(body.response_url, {
@@ -209,6 +209,56 @@ function nearestFutureMinutes(interval, someMoment) {
   const roundedMinutes = Math.ceil(someMoment.minute() / interval) * interval;
   return someMoment.clone().minute(roundedMinutes).second(0);
 }
+
+function getRunningMatch(requiredMatchTime) {
+  
+    requiredMatchTime = requiredMatchTime.format('x');
+  
+    return matches.find(match => {
+      const matchStart = moment(match.time).format('x');
+      const matchEnd = moment(match.time).add(20, 'minutes').format('x');
+      return (requiredMatchTime >= matchStart && requiredMatchTime <= matchEnd);
+    });
+  }
+  
+  
+  function getFreeSlots() {
+    let nextSlot = nearestFutureMinutes(20, moment());
+    let freeSlots = [];
+    let time;
+  
+    do {
+      nextSlot.add(20, 'minutes')
+      if (!getRunningMatch(nextSlot)) {
+        time = nextSlot.format('HH:mm');
+        freeSlots.push({ text: time + ' Uhr', value: time });
+      }
+    } while (nextSlot.isBefore(moment().endOf('day')))
+  
+    return freeSlots;
+  }
+  
+  function checkTimeString(timeString) {
+    return !/[0-2]?[0-9]:[0-5][0-9]/.test(timeString);
+  }
+  
+  function getUserObject(user) {
+    return '<@' + user.userId + '|' + user.userName + '>';
+  }
+  
+  function getMatchList() {
+    if (!matches.length) {
+      return { text: 'Keine Reservierungen für heute' };
+    }
+  
+    let list = 'Reservierungen:\n';
+    list += matches.map((match, index) => {
+      return '\n' + (index+1) + '. ' + match.time.format('HH:mm') + ' Uhr, Teilnehmer:  ' +
+        match.players.map(player => getUserObject(player)).join(' ')
+    });
+  
+    return { text: list };
+  }  
 
 function reserveMatch(timeString, userId, userName){
   
