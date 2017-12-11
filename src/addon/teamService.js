@@ -50,9 +50,10 @@ class TeamServiceModel {
       data: {},
       message: ''
     };
-    if (typeof this.teams[name] === 'undefined') {
+    let team = this.teams[name] || this.teams[name.split('.').reverse().join('.')];
+    if (!team) {
       let teamMembers = [member1, member2];
-      let data = new Team(name, location, teamMembers);
+      let data = new Team(member1 + '.' + member2, location, teamMembers);
       this.teams[name] = data;
       this.writeDb();
 
@@ -71,13 +72,13 @@ class TeamServiceModel {
       response.message = 'Added a new team';
     } else {
       response.data = this.teams[name];
-      response.message = 'Team already registered'
+      response.message = 'Team already registered';
     }
     return response;
   }
 
   getTeam(name) {
-    return this.teams[name];
+    return this.teams[name] || this.teams[name.split('.').reverse().join('.')];
   }
 
   getAllTeams() {

@@ -13,27 +13,25 @@ class Main {
     this.matchService = MatchService;
 
     // testing methods
-    let self = this;
-    setTimeout(() => {
+    // let self = this;
+    // setTimeout(() => {
 
-      self.register('Paul', 'Berlin');
-      self.register('Jens', 'Berlin');
-      self.register('Rene', 'Berlin');
-      self.register('Stefan', 'Berlin');
-      self.register('Bumsfallarah', 'Berlin', 'Paul', 'Jens');
-      self.register('Kloetentroeten', 'Berlin', 'Rene', 'Stefan');
-      self.challenge('new', {challenger: 'Bumsfallarah', opponent: 'Kloetentroeten'});
-      self.challenge('change', {opponent: 'Kloetentroeten'});
-      self.challenge('accept', {opponent: 'Bumsfallarah'});
-      self.challenge('enterResult', {party: 'Bumsfallarah', result: '2:1', party2: 'Kloetentroeten'});
-      self.challenge('enterResult', {party: 'Kloetentroeten', result: '2:1', party2: 'Bumsfallarah'});
-      self.challenge('enterResult', {party: 'Kloetentroeten', result: '2:1', party2: 'Bumsfallarah'});
-      let match = self.challenge('enterResult', {party: 'Bumsfallarah', result: '1:2', party2: 'Kloetentroeten'});
-      //console.log(match);
-      // console.log('alluser', self.userService.getAllUsers());
-      // console.log('allTeams', self.teamService.getAllTeams());
-      //console.log(this);
-    }, 500);
+    //   self.register('Paul', 'Berlin');
+    //   self.register('Jens', 'Berlin');
+    //   self.register('Rene', 'Berlin');
+    //   self.register('Stefan', 'Berlin');
+    //   self.register('Paul.Jens', 'Berlin', 'Paul', 'Jens');
+    //   self.register('Rene.Stefan', 'Berlin', 'Rene', 'Stefan');
+    //   self.challenge('new', {challenger: 'Paul.Jens', opponent: 'Rene.Stefan'});
+    //   self.challenge('change', {opponent: 'Rene.Stefan'});
+    //   self.challenge('accept', {opponent: 'Paul.Jens'});
+    //   self.challenge('enterResult', {party: 'Rene.Stefan', result: '2:1', party2: 'Paul.Jens'});
+    //   let match = self.challenge('enterResult', {party: 'Paul.Jens', result: '1:2', party2: 'Rene.Stefan'});
+    //   console.log(match);
+    //   console.log('alluser', self.userService.getAllUsers());
+    //   console.log('allTeams', self.teamService.getAllTeams());
+    //   console.log(this);
+    // }, 500);
   }
 
   register(name, location, member1, member2) {
