@@ -169,20 +169,21 @@ app.post('/interactive-component', (req, res) => {
           let team1, team2, team1Name, team2Name;
           if(match.players.length === 4) {
             team1Name = match.players[0] + '.' + match.players[1];
-            team2Name = match.players[1] + '.' + match.players[2];
+            team2Name = match.players[2] + '.' + match.players[3];
             team1 = service.register(team1Name, 'Berlin', match.players[0], match.players[1]).data;
-            team2 = service.register(team2Name, 'Berlin', match.players[1], match.players[2]).data;
+            team2 = service.register(team2Name, 'Berlin', match.players[2], match.players[3]).data;
           } else {
             team1Name = match.players[0];
             team2Name = match.players[1];
             team1 = service.register(match.players[0], 'Berlin', match.players[0]).data;
             team2 = service.register(match.players[1], 'Berlin', match.players[1]).data;
           }
-
+          debug(team1, team2, team1Name, team2Name);
           service.challenge('new', {challenger: team1Name, opponent: team2Name});
           service.challenge('accept', {opponent: team2Name});
           service.challenge('enterResult', {party: team1Name, result: match.score[0] + ':' + match.score[1], party2: team2Name});
           let result = service.challenge('enterResult', {party: team2Name, result: match.score[1] + ':' + match.score[0], party2: team1Name});
+          debug(result);
           
           axios.post(WEBHOOK_URL, {
             text: match.gameMode === '1vs1' ?
@@ -270,12 +271,12 @@ function getRunningMatch(requiredMatchTime) {
     
     let teamScores = 'Team Scores:\n';
     teamScores += service.getTeamScores().slice(0,9).map((team, index) => {
-      return '\n' + (index+1) + '. ' + team.name + ' ' + team.rating;
+      return '\n' + (index+1) + '. ' + '<@' + team.member[0] + '> & ' + '<@' + team.member[1] + '> ' + team.rating;
     });
 
     let playerScores = 'Player Scores:\n';
     playerScores += service.getPlayerScores().slice(0,9).map((player, index) => {
-      return '\n' + (index+1) + '. ' + player.name + ' ' + player.rating;
+      return '\n' + (index+1) + '. ' + '<@' + player.name + '> ' + player.rating;
     });
     return { text: teamScores + '\n \n' + playerScores };
   }
