@@ -5,7 +5,7 @@ const Match = require('./model/Match');
 
 function getModelByName(name) {
   let userModel = UserService.getUser(name);
-  if(typeof userModel === 'undefined') {
+  if (typeof userModel === 'undefined') {
     return TeamService.getTeam(name);
   }
   return userModel;
@@ -22,11 +22,11 @@ class MatchServiceModel {
       data: {},
       message: ''
     };
-    if(typeof this.currentlyChallenged[challenger] !== 'undefined') {
+    if (typeof this.currentlyChallenged[challenger] !== 'undefined') {
       respond.message = challenger + ' already challenged';
       return respond;
     }
-    if(typeof this.currentlyChallenged[opponent] !== 'undefined') {
+    if (typeof this.currentlyChallenged[opponent] !== 'undefined') {
       respond.message = opponent + ' already challenged';
       return respond;
     }
@@ -34,11 +34,11 @@ class MatchServiceModel {
     let challengerModel = getModelByName(challenger);
     let opponentModel = getModelByName(opponent);
 
-    if(typeof challengerModel === 'undefined') {
+    if (typeof challengerModel === 'undefined') {
       respond.message = 'Player ' + challenger + ' not found!';
       return respond;
     }
-    if(typeof opponentModel === 'undefined') {
+    if (typeof opponentModel === 'undefined') {
       respond.message = 'Player ' + opponent + ' not found!';
       return respond;
     }
@@ -59,12 +59,12 @@ class MatchServiceModel {
       data: {},
       message: ''
     };
-    if(typeof match === 'undefined') {
+    if (typeof match === 'undefined') {
       respond.message = opponent + ' not challenged';
       return respond;
     }
 
-    if(match.opponent.name !== this.currentlyChallenged[opponent]) {
+    if (match.opponent.name !== this.currentlyChallenged[opponent]) {
       respond.message = opponent + ' is the challenger. He cannot accept the match.';
       return respond;
     }
@@ -82,12 +82,12 @@ class MatchServiceModel {
       data: {},
       message: ''
     };
-    if(typeof match === 'undefined') {
+    if (typeof match === 'undefined') {
       respond.message = opponent + ' not challenged';
       return respond;
     }
 
-    if(match.opponent.name !== this.currentlyChallenged[opponent]) {
+    if (match.opponent.name !== this.currentlyChallenged[opponent]) {
       respond.message = opponent + ' is the challenger. He cannot decline the match.';
       return respond;
     }
@@ -105,11 +105,11 @@ class MatchServiceModel {
       data: {},
       message: ''
     };
-    if(typeof match === 'undefined') {
+    if (typeof match === 'undefined') {
       respond.message = opponent + ' not challenged';
       return respond;
     }
-    if(match.opponent.name !== opponent) {
+    if (match.opponent.name !== opponent) {
       respond.message = opponent + ' is the challenger. He cannot change the match.';
       return respond;
     }
@@ -124,19 +124,19 @@ class MatchServiceModel {
       data: {},
       message: ''
     };
-    if(typeof match === 'undefined') {
+    if (typeof match === 'undefined') {
       respond.message = party + ' has no active match.';
       return respond;
     }
     match.enterResult(party, result, party2);
-    if(match.status === 'waiting') {
+    if (match.status === 'waiting') {
       respond.status = 'success';
       respond.data = match;
       respond.message = 'Result entered. Waiting for other';
-    } else if(match.status === 'failed') {
+    } else if (match.status === 'failed') {
       respond.data = match;
       respond.message = 'Entered results don\'t match. Resetting results.';
-    } else if(match.status === 'finished') {
+    } else if (match.status === 'finished') {
       this.constructor.finishMatch(match);
       respond.status = 'success';
       respond.data = match;
@@ -152,15 +152,17 @@ class MatchServiceModel {
     let loserRating = RatingService.getRatingChange(winner.rating, loser.rating, false);
     winner.addRating(winnerRating);
     loser.addRating(loserRating);
-    if(winner.type === 'team') {
-      for(let i = 0; i < winner.member.length; i++) {
+    if (winner.type === 'team') {
+      winner.addWin();
+      for (let i = 0; i < winner.member.length; i++) {
         UserService.getUser(winner.member[i]).addWin(true);
       }
     } else {
       winner.addWin(false);
     }
-    if(loser.type === 'team') {
-      for(let i = 0; i < winner.member.length; i++) {
+    if (loser.type === 'team') {
+      loser.addLose();
+      for (let i = 0; i < winner.member.length; i++) {
         UserService.getUser(loser.member[i]).addLose(true);
       }
     } else {

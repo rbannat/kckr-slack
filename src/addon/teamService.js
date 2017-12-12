@@ -71,7 +71,7 @@ class TeamServiceModel {
       response.status = 'success';
       response.message = 'Added a new team';
     } else {
-      response.data = this.teams[name];
+      response.data = this.teams[team.name];
       response.message = 'Team already registered';
     }
     return response;

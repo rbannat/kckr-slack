@@ -17,4 +17,12 @@ module.exports = class Team {
   addRating(rating) {
     this.rating = this.rating + rating;
   }
+
+  addWin() {
+    this.stats.win += 1;
+  }
+
+  addLose() {
+    this.stats.lose += 1;
+  }
 };
