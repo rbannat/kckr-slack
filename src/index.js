@@ -205,14 +205,14 @@ app.post('/interactive-component', (req, res) => {
             });
             debug(result);
 
-            // axios.post(WEBHOOK_URL, {
-            //   text: players.length === 2 ?
-            //   `<@${body.user.id}> recorded a match: <@${match.players[0]}> vs <@${match.players[1]}> ${match.score.join(':')}`:
-            //   `<@${body.user.id}> recorded a match: <@${match.players[0]}>, <@${match.players[1]}>  vs <@${match.players[2]}>, <@${match.players[3]}> ${match.score.join(':')}`
-            // });
-            // axios.post(body.response_url, {
-            //   text: 'Your match has been recorded!',
-            // });
+            axios.post(WEBHOOK_URL, {
+              text: players.length === 2 ?
+              `<@${body.user.id}> recorded a match: <@${match.players[0]}> vs <@${match.players[1]}> ${match.score.join(':')}`:
+              `<@${body.user.id}> recorded a match: <@${match.players[0]}>, <@${match.players[1]}>  vs <@${match.players[2]}>, <@${match.players[3]}> ${match.score.join(':')}`
+            });
+            axios.post(body.response_url, {
+              text: 'Your match has been recorded!',
+            });
             delete matches[body.user.id];
           } else {
             res.send({
