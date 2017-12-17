@@ -61,4 +61,4 @@ typings/
 /.idea
 
 # data
-src/addon/data/
+/src/addon/data/
