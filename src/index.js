@@ -7,6 +7,7 @@ const qs = require('querystring');
 const debug = require('debug')('kickr');
 const tokenizer = require('string-tokenizer');
 const service = require('./addon/main');
+const helpers = require('./helpers')
 
 const {
   WEBHOOK_URL,
@@ -58,17 +59,9 @@ app.post('/commands', (req, res) => {
     if (text.startsWith('record')) {
       debug('Incoming record slash command: ', req.body);
 
-      const arrayOrUndefined = (data) => {
-        if (typeof data === 'undefined' || Array.isArray(data)) {
-          return data
-        }
-        return [data]
-      }
-
       let message,
         players,
-        score,
-        gameMode;
+        score
 
       try {
         const tokens = tokenizer()
@@ -77,34 +70,38 @@ app.post('/commands', (req, res) => {
           .token('score', /[0-2]\:[0-2]/)
           .resolve();
 
-        debug(tokens);
+        debug(`Parsed tokens: `, tokens);
 
-        players = arrayOrUndefined(tokens.players);
-        players = [...new Set(players)]
-        if (players.length === 2) {
-          gameMode = '1vs1';
-        } else if (players.length === 4) {
-          gameMode = '2vs2';
-        } else {
-          throw ('Error parsing players');
+        // ensure unique players
+        players = [...new Set(helpers.arrayOrUndefined(tokens.players))]
+        debug(`Unique player ids: ${players}`);
+        if (players.length !== 2 && players.length !== 4) {
+          throw ('Count of players needs to be two or four');
         }
-        debug(players)
-        score = arrayOrUndefined(tokens.score)[0].split(':');
+
+        score = helpers.arrayOrUndefined(tokens.score)[0].split(':').map((singleScore) => parseInt(singleScore));
+        debug(`Score: ${score}`);
+        if (score.length !== 2 || score[0] < 0 || score[0] > 2 || score[1] < 0 || score[1] > 2 || (score[0] + score[1]) > 3 || (score[0] + score[1]) < 2) {
+          throw ('Score is invalid');
+        }
+
       } catch (error) {
-        debug(error);
+
+        debug('Error parsing command: ', error);
+
         message = {
-          text: 'Sorry, could not parse the command.'
+          text: 'Sorry, I had a problem parsing the command.'
         }
         return res.send(message);
       }
+
       // temporarily save match for approval
       matches[user_id] = {
         players,
-        gameMode,
         score
       };
       message = {
-        text: gameMode === '1vs1' ?
+        text: players.length === 2 ?
           `Confirm match results <@${players[0]}> vs <@${players[1]}> ${score.join(':')} ?` : `Confirm match results <@${players[0]}>, <@${players[1]}>  vs <@${players[2]}>, <@${players[3]}> ${score.join(':')} ?`,
         attachments: [{
           fallback: 'You are unable to confirm match',
@@ -156,7 +153,6 @@ app.post('/interactive-component', (req, res) => {
 
   // check that the verification token matches expected value
   if (body.token === SLACK_VERIFICATION_TOKEN) {
-    debug('Interactive action received: ', body);
 
     switch (body.callback_id) {
       case 'match_actions':
@@ -209,14 +205,14 @@ app.post('/interactive-component', (req, res) => {
             });
             debug(result);
 
-            axios.post(WEBHOOK_URL, {
-              text: match.gameMode === '1vs1' ?
-              `<@${body.user.id}> recorded a match: <@${match.players[0]}> vs <@${match.players[1]}> ${match.score.join(':')}`:
-              `<@${body.user.id}> recorded a match: <@${match.players[0]}>, <@${match.players[1]}>  vs <@${match.players[2]}>, <@${match.players[3]}> ${match.score.join(':')}`
-            });
-            axios.post(body.response_url, {
-              text: 'Your match has been recorded!',
-            });
+            // axios.post(WEBHOOK_URL, {
+            //   text: players.length === 2 ?
+            //   `<@${body.user.id}> recorded a match: <@${match.players[0]}> vs <@${match.players[1]}> ${match.score.join(':')}`:
+            //   `<@${body.user.id}> recorded a match: <@${match.players[0]}>, <@${match.players[1]}>  vs <@${match.players[2]}>, <@${match.players[3]}> ${match.score.join(':')}`
+            // });
+            // axios.post(body.response_url, {
+            //   text: 'Your match has been recorded!',
+            // });
             delete matches[body.user.id];
           } else {
             res.send({
@@ -226,9 +222,10 @@ app.post('/interactive-component', (req, res) => {
           break;
         }
       default:
+        debug('No callback id for incoming action', body);
         // immediately respond with a empty 200 response to let
         // Slack know the command was received
-        res.send('');
+        res.send(404, 'Sorry, cannot find message action');
     }
 
   } else {

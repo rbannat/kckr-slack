@@ -118,7 +118,7 @@ class MatchServiceModel {
   }
 
   enterResult(party, result, party2) {
-    let match = this.currentlyChallenged[party];
+    let match = this.currentlyChallenged[party] || this.currentlyChallenged[party2];
     let respond = {
       status: 'failed',
       data: {},
@@ -137,7 +137,7 @@ class MatchServiceModel {
       respond.data = match;
       respond.message = 'Entered results don\'t match. Resetting results.';
     } else if (match.status === 'finished') {
-      this.constructor.finishMatch(match);
+      this.finishMatch(match);
       respond.status = 'success';
       respond.data = match;
       respond.message = 'Match finished';
@@ -145,7 +145,7 @@ class MatchServiceModel {
     return respond;
   }
 
-  static finishMatch(match) {
+  finishMatch(match) {
     let winner = match.getWinner();
     let loser = match.getLoser();
     let winnerRating = RatingService.getRatingChange(winner.rating, loser.rating, true);
@@ -168,13 +168,14 @@ class MatchServiceModel {
     } else {
       loser.addLose(false);
     }
+    this.removeMatch(match);
     UserService.writeDb();
     TeamService.writeDb();
   }
 
   removeMatch(match) {
-    delete this.currentlyChallenged[match.challenger];
-    delete this.currentlyChallenged[match.opponent];
+    delete this.currentlyChallenged[match.challenger.name];
+    delete this.currentlyChallenged[match.opponent.name];
   }
 }
 
