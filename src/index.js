@@ -206,7 +206,7 @@ app.post('/interactive-component', (req, res) => {
             debug(result);
 
             axios.post(WEBHOOK_URL, {
-              text: players.length === 2 ?
+              text: match.players.length === 2 ?
               `<@${body.user.id}> recorded a match: <@${match.players[0]}> vs <@${match.players[1]}> ${match.score.join(':')}`:
               `<@${body.user.id}> recorded a match: <@${match.players[0]}>, <@${match.players[1]}>  vs <@${match.players[2]}>, <@${match.players[3]}> ${match.score.join(':')}`
             });
