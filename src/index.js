@@ -1,7 +1,12 @@
-require('dotenv').config();
+const config = require('./config');
 const axios = require('axios');
 const express = require('express');
 const bodyParser = require('body-parser');
+const {
+  slackIncomingWebhook,
+  slackWebClient
+} = require('@slack/client');
+const slackInteractiveMessages = require('@slack/interactive-messages');
 const moment = require('moment');
 const qs = require('querystring');
 const debug = require('debug')('kickr');
@@ -9,33 +14,42 @@ const tokenizer = require('string-tokenizer');
 const service = require('./addon/main');
 const helpers = require('./helpers')
 
+// load environment config
 const {
-  WEBHOOK_URL,
-  PORT,
-  SLACK_VERIFICATION_TOKEN,
-  SLACK_ACCESS_TOKEN
-} = process.env;
+  app: {
+    port
+  },
+  slack: {
+    clientId,
+    verificationToken,
+    accessToken,
+    webhookUrl,
+    messageActionPath
+  }
+} = config;
 
 const app = express();
-/*
- * Parse application/x-www-form-urlencoded && application/json
- */
+
+// Parse application/x-www-form-urlencoded && application/json
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
   extended: true
 }));
-app.use(bodyParser.json());
 
-/**
- * Start the app
- */
+const slackMessages = slackInteractiveMessages.createMessageAdapter(verificationToken);
+app.use(messageActionPath, slackMessages.expressMiddleware());
+
+// Start server
 init();
 
 const matches = {};
 const reservedMatches = [];
 
 app.get('/', (req, res) => {
-  res.send('<h2>The Kickr Slack app is running</h2> <p>Follow the' +
-    ' instructions in the README to configure the Slack App and your environment variables.</p>');
+  res.send(
+    `<h2>The Kckr Slack app is running</h2> 
+    <p>Follow the instructions in the README to configure the Slack App and your environment variables.</p>`
+  );
 });
 
 /*
@@ -54,14 +68,14 @@ app.post('/commands', (req, res) => {
   } = req.body;
 
   // check that the verification token matches expected value
-  if (token === SLACK_VERIFICATION_TOKEN) {
+  if (token === verificationToken) {
 
     if (text.startsWith('record')) {
       debug('Incoming record slash command: ', req.body);
 
       let message,
         players,
-        score
+        score;
 
       try {
         const tokens = tokenizer()
@@ -143,94 +157,76 @@ app.post('/commands', (req, res) => {
   }
 });
 
-/*
- * Endpoint to receive interactive message actions. Checks the verification token
- * before handling request.
- */
-app.post('/interactive-component', (req, res) => {
-
-  const body = JSON.parse(req.body.payload);
-
-  // check that the verification token matches expected value
-  if (body.token === SLACK_VERIFICATION_TOKEN) {
-
-    switch (body.callback_id) {
-      case 'match_actions':
-        if (body.actions[0].name === 'cancel') {
-          return res.send(cancelMatch(body.actions[0].value, body.user.id, body.user.name))
-        } else {
-          return res.send(joinMatch(body.actions[0].value, body.user.id, body.user.name));
-        }
-        break;
-      case 'select_times':
-        {
-          return res.send(reserveMatch(body.actions[0].selected_options[0].value, body.user.id, body.user.name));
-        }
-      case 'record_match':
-        {
-          debug('Incoming match confirmation', body);
-          const match = matches[body.user.id];
-
-          if (body.actions[0].value === 'submit') {
-            res.send({
-              text: 'Waiting for match to be recorded ...'
-            });
-
-            let team1, team2, team1Name, team2Name;
-            if (match.players.length === 4) {
-              team1Name = match.players[0] + '.' + match.players[1];
-              team2Name = match.players[2] + '.' + match.players[3];
-              team1 = service.register(team1Name, 'Berlin', match.players[0], match.players[1]).data;
-              team2 = service.register(team2Name, 'Berlin', match.players[2], match.players[3]).data;
-            } else {
-              team1Name = match.players[0];
-              team2Name = match.players[1];
-              team1 = service.register(match.players[0], 'Berlin', match.players[0]).data;
-              team2 = service.register(match.players[1], 'Berlin', match.players[1]).data;
-            }
-            debug(team1, team2, team1Name, team2Name);
-            debug(service.challenge('new', {
-              challenger: team1.name,
-              opponent: team2.name
-            }));
-            debug(service.challenge('enterResult', {
-              party: team1.name,
-              result: match.score[0] + ':' + match.score[1],
-              party2: team2.name
-            }));
-            let result = service.challenge('enterResult', {
-              party: team2.name,
-              result: match.score[1] + ':' + match.score[0],
-              party2: team1.name
-            });
-            debug(result);
-
-            axios.post(WEBHOOK_URL, {
-              text: match.players.length === 2 ?
-              `<@${body.user.id}> recorded a match: <@${match.players[0]}> vs <@${match.players[1]}> ${match.score.join(':')}`:
-              `<@${body.user.id}> recorded a match: <@${match.players[0]}>, <@${match.players[1]}>  vs <@${match.players[2]}>, <@${match.players[3]}> ${match.score.join(':')}`
-            });
-            axios.post(body.response_url, {
-              text: 'Your match has been recorded!',
-            });
-            delete matches[body.user.id];
-          } else {
-            res.send({
-              text: 'Match recording cancelled.'
-            });
-          }
-          break;
-        }
-      default:
-        debug('No callback id for incoming action', body);
-        // immediately respond with a empty 200 response to let
-        // Slack know the command was received
-        res.send(404, 'Sorry, cannot find message action');
-    }
-
+// Slack Interactive Messages
+slackMessages.action('match_actions', payload => {
+  debug('received match action: ', payload.actions[0]);
+  if (payload.actions[0].name === 'cancel') {
+    return cancelMatch(payload.actions[0].value, payload.user.id, payload.user.name);
   } else {
-    debug('Token mismatch');
-    res.sendStatus(500);
+    return joinMatch(payload.actions[0].value, payload.user.id, payload.user.name);
+  }
+});
+
+slackMessages.action('select_times', payload => {
+  return reserveMatch(payload.actions[0].selected_options[0].value, payload.user.id, payload.user.name);
+});
+
+slackMessages.action('record_match', (payload, respond) => {
+  debug('Incoming match confirmation', payload);
+  const match = matches[payload.user.id];
+
+  if (payload.actions[0].value === 'submit') {
+
+    let team1, team2, team1Name, team2Name;
+    if (match.players.length === 4) {
+      team1Name = match.players[0] + '.' + match.players[1];
+      team2Name = match.players[2] + '.' + match.players[3];
+      team1 = service.register(team1Name, 'Berlin', match.players[0], match.players[1]).data;
+      team2 = service.register(team2Name, 'Berlin', match.players[2], match.players[3]).data;
+    } else {
+      team1Name = match.players[0];
+      team2Name = match.players[1];
+      team1 = service.register(match.players[0], 'Berlin', match.players[0]).data;
+      team2 = service.register(match.players[1], 'Berlin', match.players[1]).data;
+    }
+    debug(team1, team2, team1Name, team2Name);
+    debug(service.challenge('new', {
+      challenger: team1.name,
+      opponent: team2.name
+    }));
+    debug(service.challenge('enterResult', {
+      party: team1.name,
+      result: match.score[0] + ':' + match.score[1],
+      party2: team2.name
+    }));
+    let result = service.challenge('enterResult', {
+      party: team2.name,
+      result: match.score[1] + ':' + match.score[0],
+      party2: team1.name
+    });
+    debug(result);
+
+    axios.post(WEBHOOK_URL, {
+      text: match.players.length === 2 ?
+        `<@${payload.user.id}> recorded a match: <@${match.players[0]}> vs <@${match.players[1]}> ${match.score.join(':')}` : `<@${payload.user.id}> recorded a match: <@${match.players[0]}>, <@${match.players[1]}>  vs <@${match.players[2]}>, <@${match.players[3]}> ${match.score.join(':')}`
+    });
+    // axios.post(payload.response_url, {
+    //   text: 'Your match has been recorded!',
+    // });
+
+    respond({
+      text: 'Your match has been recorded!',
+    });
+
+    delete matches[payload.user.id];
+
+    return {
+      text: 'Waiting for match to be recorded ...'
+    };
+  } else {
+    return {
+      text: 'Match recording cancelled.'
+    };
   }
 });
 
@@ -409,14 +405,13 @@ function cancelMatch(matchId, userId, userName) {
   if (match.createdBy.userId === userId) {
 
     // delete match
+    debug('delete reserved match', match);
     reservedMatches = reservedMatches.filter((match) => {
       return match.createdBy.userId !== userId;
     });
-
     return {
       text: 'Hey ' + match.players.map(player => getUserObject(player)).join(', ') +
-        ', das Match um ' + match.time.format('HH:mm') + ' Uhr wurde abgesagt!',
-      replace_original: true,
+        ', das Match um ' + match.time.format('HH:mm') + ' Uhr wurde abgesagt!'
     }
   }
 
@@ -536,7 +531,7 @@ function getFreeSlots() {
 }
 
 function init() {
-  app.listen(PORT, () => {
-    console.log(`App listening on port ${PORT}!`);
+  app.listen(port, () => {
+    console.log(`App listening on port ${port}!`);
   });
 }

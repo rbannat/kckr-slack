@@ -1,9 +1,10 @@
 const fs = require('fs');
 const path = require('path');
+const config = require('../config');
 const Team = require('./model/Team');
 const UserService = require('./userService');
 
-const dbPath = 'data/mySuperSecureTeamDb.json';
+const dbPath = config.db.teamDBPath;
 
 class TeamServiceModel {
   constructor() {

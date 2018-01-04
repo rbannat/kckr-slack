@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "@slack/client": "^3.15.0",
+    "@slack/interactive-messages": "^0.2.0",
     "axios": "^0.17.1",
     "body-parser": "^1.17.2",
     "debug": "^3.1.0",
@@ -17,13 +19,15 @@
     "string-tokenizer": "0.0.8"
   },
   "scripts": {
-    "start": "node ./src/index.js",
+    "start": "NODE_ENV=production node ./src/index.js",
     "start:dev": "DEBUG=kickr nodemon ./src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "nodemonConfig": {
-    "ignore": ["src/addon/data/*"]
+    "ignore": [
+      "src/addon/data/*"
+    ]
   }
 }

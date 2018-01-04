@@ -10,13 +10,9 @@ module.exports = class Match {
   enterResult(party, score, party2) {
     let newResult = score;
 
-    console.log(this.challenger);
-    console.log(this.challenger.name);
     if (this.challenger.name === party2) {
       newResult = score.split(':').reverse().join(':');
-      console.log('score: ', score, 'new: ', newResult);
     } 
-console.log(party, score, party2, newResult);
     if (this.result) {
       if (this.result === newResult) {
         this.status = 'finished';
