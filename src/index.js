@@ -9,10 +9,9 @@ const bodyParser = require('body-parser');
 const slackInteractiveMessages = require('@slack/interactive-messages');
 const debug = require('debug')('kickr');
 const tokenizer = require('string-tokenizer');
-const service = require('./addon/main');
 const helpers = require('./helpers');
 const reservationManager = require('./reservationManager');
-// const recordMatchHandler = require('./recordMatchHandler');
+const recordMatchHandler = require('./recordMatchHandler');
 
 // load environment config
 const {
@@ -47,8 +46,6 @@ app.get('/', (req, res) => {
   );
 });
 
-const matches = {};
-
 /*
  * Endpoint to receive slash commands from Slack.
  * Checks verification token before parsing the command.
@@ -61,17 +58,15 @@ app.post('/commands', (req, res) => {
     text,
     user_id
   } = req.body;
-
   // check that the verification token matches expected value
   if (token === verificationToken) {
 
     if (text.startsWith('record')) {
       debug('Incoming record slash command: ', req.body);
-
+      // parse result
       let message,
         players,
         score;
-
       try {
         const tokens = tokenizer()
           .input(text)
@@ -80,58 +75,27 @@ app.post('/commands', (req, res) => {
           .resolve();
 
         debug(`Parsed tokens: `, tokens);
-
         // ensure unique players
         players = [...new Set(helpers.arrayOrUndefined(tokens.players))]
         debug(`Unique player ids: ${players}`);
         if (players.length !== 2 && players.length !== 4) {
           throw ('Count of players needs to be two or four');
         }
-
         score = helpers.arrayOrUndefined(tokens.score)[0].split(':').map((singleScore) => parseInt(singleScore));
         debug(`Score: ${score}`);
         if (score.length !== 2 || score[0] < 0 || score[0] > 2 || score[1] < 0 || score[1] > 2 || (score[0] + score[1]) > 3 || (score[0] + score[1]) < 2) {
           throw ('Score is invalid');
         }
-
       } catch (error) {
-
         debug('Error parsing command: ', error);
-
         message = {
           text: 'Sorry, I had a problem parsing the command.'
         }
         return res.send(message);
       }
-
       // temporarily save match for approval
-      matches[user_id] = {
-        players,
-        score
-      };
-      message = {
-        text: players.length === 2 ?
-          `Confirm match results <@${players[0]}> vs <@${players[1]}> ${score.join(':')} ?` : `Confirm match results <@${players[0]}>, <@${players[1]}>  vs <@${players[2]}>, <@${players[3]}> ${score.join(':')} ?`,
-        attachments: [{
-          fallback: 'You are unable to confirm match',
-          callback_id: 'record_match',
-          actions: [{
-              name: 'submit',
-              value: 'submit',
-              text: 'Submit',
-              type: 'button',
-              style: 'primary'
-            },
-            {
-              name: 'cancel',
-              value: 'cancel',
-              text: 'Cancel',
-              type: 'button',
-              style: 'danger'
-            }
-          ]
-        }]
-      }
+      recordMatchHandler.storeMatch(user_id, players, score);
+      message = recordMatchHandler.getConfirmationMessage(players, score);
       return res.send(message);
     }
 
@@ -140,7 +104,7 @@ app.post('/commands', (req, res) => {
     }
 
     if (text === 'scores') {
-      return res.send(getScores());
+      return res.send(recordMatchHandler.getScores());
     }
 
     // default to table reservation
@@ -168,49 +132,21 @@ slackMessages.action('select_times', payload => {
 
 slackMessages.action('record_match', (payload, respond) => {
   debug('Incoming match confirmation', payload);
-  const match = matches[payload.user.id];
-
+  
   if (payload.actions[0].value === 'submit') {
-
-    let team1, team2, team1Name, team2Name;
-    if (match.players.length === 4) {
-      team1Name = match.players[0] + '.' + match.players[1];
-      team2Name = match.players[2] + '.' + match.players[3];
-      team1 = service.register(team1Name, 'Berlin', match.players[0], match.players[1]).data;
-      team2 = service.register(team2Name, 'Berlin', match.players[2], match.players[3]).data;
-    } else {
-      team1Name = match.players[0];
-      team2Name = match.players[1];
-      team1 = service.register(match.players[0], 'Berlin', match.players[0]).data;
-      team2 = service.register(match.players[1], 'Berlin', match.players[1]).data;
-    }
-    debug(team1, team2, team1Name, team2Name);
-    debug(service.challenge('new', {
-      challenger: team1.name,
-      opponent: team2.name
-    }));
-    debug(service.challenge('enterResult', {
-      party: team1.name,
-      result: match.score[0] + ':' + match.score[1],
-      party2: team2.name
-    }));
-    let result = service.challenge('enterResult', {
-      party: team2.name,
-      result: match.score[1] + ':' + match.score[0],
-      party2: team1.name
-    });
-    debug(result);
-
+    const match = recordMatchHandler.getMatch(payload.user.id);
+    debug(match);
+    recordMatchHandler.recordMatch(match);
+    
     axios.post(webhookUrl, {
       text: match.players.length === 2 ?
-        `<@${payload.user.id}> recorded a match: <@${match.players[0]}> vs <@${match.players[1]}> ${match.score.join(':')}` : `<@${payload.user.id}> recorded a match: <@${match.players[0]}>, <@${match.players[1]}>  vs <@${match.players[2]}>, <@${match.players[3]}> ${match.score.join(':')}`
+      `<@${payload.user.id}> recorded a match: <@${match.players[0]}> vs <@${match.players[1]}> ${match.score.join(':')}` : `<@${payload.user.id}> recorded a match: <@${match.players[0]}>, <@${match.players[1]}>  vs <@${match.players[2]}>, <@${match.players[3]}> ${match.score.join(':')}`
     });
-
+    
+    recordMatchHandler.deleteMatch(payload.user.id);
     respond({
       text: 'Your match has been recorded!',
     });
-
-    delete matches[payload.user.id];
 
     return {
       text: 'Waiting for match to be recorded ...'
@@ -221,22 +157,6 @@ slackMessages.action('record_match', (payload, respond) => {
     };
   }
 });
-
-function getScores() {
-
-  let teamScores = 'Team Scores:\n';
-  teamScores += service.getTeamScores().slice(0, 9).map((team, index) => {
-    return '\n' + (index + 1) + '. ' + '<@' + team.member[0] + '> / ' + '<@' + team.member[1] + '> ' + team.rating;
-  });
-
-  let playerScores = 'Single Player Scores:\n';
-  playerScores += service.getPlayerScores().slice(0, 9).map((player, index) => {
-    return '\n' + (index + 1) + '. ' + '<@' + player.name + '> ' + player.rating;
-  });
-  return {
-    text: teamScores + '\n \n' + playerScores
-  };
-}
 
 function init() {
   app.listen(port, () => {
