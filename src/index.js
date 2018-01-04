@@ -2,17 +2,17 @@ const config = require('./config');
 const axios = require('axios');
 const express = require('express');
 const bodyParser = require('body-parser');
-const {
-  slackIncomingWebhook,
-  slackWebClient
-} = require('@slack/client');
+// const {
+//   slackIncomingWebhook,
+//   slackWebClient
+// } = require('@slack/client');
 const slackInteractiveMessages = require('@slack/interactive-messages');
-const moment = require('moment');
-const qs = require('querystring');
 const debug = require('debug')('kickr');
 const tokenizer = require('string-tokenizer');
 const service = require('./addon/main');
-const helpers = require('./helpers')
+const helpers = require('./helpers');
+const reservationManager = require('./reservationManager');
+// const recordMatchHandler = require('./recordMatchHandler');
 
 // load environment config
 const {
@@ -20,9 +20,7 @@ const {
     port
   },
   slack: {
-    clientId,
     verificationToken,
-    accessToken,
     webhookUrl,
     messageActionPath
   }
@@ -42,15 +40,14 @@ app.use(messageActionPath, slackMessages.expressMiddleware());
 // Start server
 init();
 
-const matches = {};
-const reservedMatches = [];
-
 app.get('/', (req, res) => {
   res.send(
     `<h2>The Kckr Slack app is running</h2> 
     <p>Follow the instructions in the README to configure the Slack App and your environment variables.</p>`
   );
 });
+
+const matches = {};
 
 /*
  * Endpoint to receive slash commands from Slack.
@@ -62,8 +59,6 @@ app.post('/commands', (req, res) => {
   const {
     token,
     text,
-    trigger_id,
-    response_url,
     user_id
   } = req.body;
 
@@ -81,7 +76,7 @@ app.post('/commands', (req, res) => {
         const tokens = tokenizer()
           .input(text)
           .token('players', /(?:@)(\w+)(?:\|)/)
-          .token('score', /[0-2]\:[0-2]/)
+          .token('score', /[0-2]:[0-2]/)
           .resolve();
 
         debug(`Parsed tokens: `, tokens);
@@ -141,7 +136,7 @@ app.post('/commands', (req, res) => {
     }
 
     if (text === 'list') {
-      return res.send(getMatchList());
+      return res.send(reservationManager.getMatchList());
     }
 
     if (text === 'scores') {
@@ -149,7 +144,7 @@ app.post('/commands', (req, res) => {
     }
 
     // default to table reservation
-    return res.send(reserveMatch(text || '', req.body.user_id, req.body.user_name));
+    return res.send(reservationManager.reserveMatch(text || '', req.body.user_id, req.body.user_name));
 
   } else {
     debug('Verification token mismatch');
@@ -161,14 +156,14 @@ app.post('/commands', (req, res) => {
 slackMessages.action('match_actions', payload => {
   debug('received match action: ', payload.actions[0]);
   if (payload.actions[0].name === 'cancel') {
-    return cancelMatch(payload.actions[0].value, payload.user.id, payload.user.name);
+    return reservationManager.cancelMatch(payload.actions[0].value, payload.user.id);
   } else {
-    return joinMatch(payload.actions[0].value, payload.user.id, payload.user.name);
+    return reservationManager.joinMatch(payload.actions[0].value, payload.user.id, payload.user.name);
   }
 });
 
 slackMessages.action('select_times', payload => {
-  return reserveMatch(payload.actions[0].selected_options[0].value, payload.user.id, payload.user.name);
+  return reservationManager.reserveMatch(payload.actions[0].selected_options[0].value, payload.user.id, payload.user.name);
 });
 
 slackMessages.action('record_match', (payload, respond) => {
@@ -206,13 +201,10 @@ slackMessages.action('record_match', (payload, respond) => {
     });
     debug(result);
 
-    axios.post(WEBHOOK_URL, {
+    axios.post(webhookUrl, {
       text: match.players.length === 2 ?
         `<@${payload.user.id}> recorded a match: <@${match.players[0]}> vs <@${match.players[1]}> ${match.score.join(':')}` : `<@${payload.user.id}> recorded a match: <@${match.players[0]}>, <@${match.players[1]}>  vs <@${match.players[2]}>, <@${match.players[3]}> ${match.score.join(':')}`
     });
-    // axios.post(payload.response_url, {
-    //   text: 'Your match has been recorded!',
-    // });
 
     respond({
       text: 'Your match has been recorded!',
@@ -230,68 +222,6 @@ slackMessages.action('record_match', (payload, respond) => {
   }
 });
 
-function nearestFutureMinutes(interval, someMoment) {
-  const roundedMinutes = Math.ceil(someMoment.minute() / interval) * interval;
-  return someMoment.clone().minute(roundedMinutes).second(0);
-}
-
-function getRunningMatch(requiredMatchTime) {
-
-  requiredMatchTime = requiredMatchTime.format('x');
-
-  return reservedMatches.find(match => {
-    const matchStart = moment(match.time).format('x');
-    const matchEnd = moment(match.time).add(20, 'minutes').format('x');
-    return (requiredMatchTime >= matchStart && requiredMatchTime <= matchEnd);
-  });
-}
-
-
-function getFreeSlots() {
-  let nextSlot = nearestFutureMinutes(20, moment());
-  let freeSlots = [];
-  let time;
-
-  do {
-    nextSlot.add(20, 'minutes')
-    if (!getRunningMatch(nextSlot)) {
-      time = nextSlot.format('HH:mm');
-      freeSlots.push({
-        text: time + ' Uhr',
-        value: time
-      });
-    }
-  } while (nextSlot.isBefore(moment().endOf('day')))
-
-  return freeSlots;
-}
-
-function checkTimeString(timeString) {
-  return !/[0-2]?[0-9]:[0-5][0-9]/.test(timeString);
-}
-
-function getUserObject(user) {
-  return '<@' + user.userId + '|' + user.userName + '>';
-}
-
-function getMatchList() {
-  if (!reservedMatches.length) {
-    return {
-      text: 'Keine Reservierungen für heute'
-    };
-  }
-
-  let list = 'Reservierungen:\n';
-  list += reservedMatches.map((match, index) => {
-    return '\n' + (index + 1) + '. ' + match.time.format('HH:mm') + ' Uhr, Teilnehmer:  ' +
-      match.players.map(player => getUserObject(player)).join(' ')
-  });
-
-  return {
-    text: list
-  };
-}
-
 function getScores() {
 
   let teamScores = 'Team Scores:\n';
@@ -308,230 +238,8 @@ function getScores() {
   };
 }
 
-function reserveMatch(timeString, userId, userName) {
-
-  const time = timeString ? moment(timeString, 'HH:mm') : moment();
-
-  if (timeString.length !== 0 && checkTimeString(timeString)) {
-    return {
-      text: 'Oops, du musst eine gültige Zeit im Format HH:mm eingeben',
-      replace_original: true,
-    };
-  }
-
-  if (timeString.length > 0 && time.isBefore(moment())) {
-    return {
-      text: 'Oops, wähle einen Zeitpunkt in der Zunkunft',
-      replace_original: true,
-    };
-  }
-
-  const runningMatch = getRunningMatch(time);
-
-  if (runningMatch) {
-    return {
-      text: 'Sorry, um ' + time.format('HH:mm') + ' Uhr ist der Raum bereits von ' + getUserObject(runningMatch.createdBy) + ' belegt!',
-      attachments: [{
-        fallback: 'Upgrade your Slack client to use messages like these.',
-        color: '#67a92f',
-        attachment_type: 'default',
-        callback_id: 'select_times',
-        actions: [{
-          name: 'times_list',
-          text: 'Wähle eine andere Zeit!',
-          type: 'select',
-          options: getFreeSlots()
-        }],
-        response_url: process.env.HOST + '/kickr/reserve'
-      }]
-    };
-  }
-
-  const newMatchId = time.format('x');
-  reservedMatches.push({
-    id: newMatchId,
-    time: time,
-    createdBy: {
-      userId: userId || 'anonymous',
-      userName: userName || 'anonymous',
-    },
-    players: [{
-      userId: userId || 'anonymous',
-      userName: userName || 'anonymous',
-    }]
-  });
-
-  return {
-    response_type: 'in_channel',
-    text: getUserObject({
-        userId,
-        userName
-      }) + ' hat von ' + time.format('HH:mm') + ' Uhr bis ' +
-      moment(time).add(20, 'minutes').format('HH:mm') + ' Uhr den Kicker reserviert! Bist du dabei?',
-    attachments: [{
-      fallback: 'You are unable to choose a game',
-      callback_id: 'match_actions',
-      color: '#67a92f',
-      attachment_type: 'default',
-      actions: [{
-        name: 'yes',
-        text: "Bin dabei",
-        type: 'button',
-        value: newMatchId,
-        style: 'primary'
-      }, {
-        name: 'cancel',
-        text: "Spiel absagen",
-        type: 'button',
-        value: newMatchId,
-        style: 'danger'
-      }]
-    }]
-  };
-}
-
-
-function cancelMatch(matchId, userId, userName) {
-  const match = reservedMatches.find((match) => match.id === matchId);
-
-  if (!match) {
-    return {
-      text: 'Match nicht vorhanden.',
-      replace_original: false,
-    }
-  }
-
-  // check owner
-  if (match.createdBy.userId === userId) {
-
-    // delete match
-    debug('delete reserved match', match);
-    reservedMatches = reservedMatches.filter((match) => {
-      return match.createdBy.userId !== userId;
-    });
-    return {
-      text: 'Hey ' + match.players.map(player => getUserObject(player)).join(', ') +
-        ', das Match um ' + match.time.format('HH:mm') + ' Uhr wurde abgesagt!'
-    }
-  }
-
-  return {
-    text: 'Du kannst nur Spiele absagen, die du selbst angelegt hast!',
-    replace_original: false,
-  }
-}
-
-function joinMatch(matchId, userId, userName) {
-  const match = reservedMatches.find(match => parseInt(match.id) === parseInt(matchId));
-
-  if (!match) {
-    return {
-      text: 'ID falsch'
-    };
-  }
-
-  if (match.createdBy.userId === userId) {
-    return {
-      text: 'Du kannst deinem eigenen Spiel nicht beitreten.',
-      replace_original: false,
-    };
-  }
-
-  if (match.players.find(player => player.userId === userId)) {
-    return {
-      text: 'Du bist bereits für das Spiel eingetragen!',
-      replace_original: false,
-    };
-  }
-
-  if (match.players.length === MAX_PLAYER) {
-
-    let text = 'Perfekt, ihr seid vollständig!\n';
-    text += 'Teilnehmer: ' + match.players.map(player => getUserObject(player)).join(', ') + ', '
-    text += getUserObject({
-      userName,
-      userId
-    }) + ' \n';
-    text += 'Uhrzeit: ' + match.time.format('HH:mm') + ' Uhr'
-
-    return {
-      text,
-      replace_original: true,
-      attachments: [{
-        callback_id: 'match_actions',
-        color: '#67a92f',
-        attachment_type: 'default',
-        actions: [{
-          name: 'cancel',
-          text: "Spiel absagen",
-          type: 'button',
-          value: matchId,
-          style: 'danger'
-        }]
-      }]
-    };
-  }
-
-  match.players.push({
-    userId,
-    userName
-  });
-  reservedMatches[matchId] = match;
-
-  return {
-    response_type: 'in_channel',
-    replace_original: false,
-    text: getUserObject({
-        userName,
-        userId
-      }) + ' spielt mit ' +
-      match.players
-      .filter(player => player.userId !== userId)
-      .map(player => getUserObject(player))
-      .join(', ')
-  };
-}
-
-function checkTimeString(timeString) {
-  return !/[0-2]?[0-9]:[0-5][0-9]/.test(timeString);
-}
-
-function getUserObject(user) {
-  return '<@' + user.userId + '|' + user.userName + '>';
-}
-
-function getRunningMatch(requiredMatchTime) {
-
-  requiredMatchTime = requiredMatchTime.format('x');
-
-  return reservedMatches.find(match => {
-    const matchStart = moment(match.time).format('x');
-    const matchEnd = moment(match.time).add(20, 'minutes').format('x');
-    return (requiredMatchTime >= matchStart && requiredMatchTime <= matchEnd);
-  });
-}
-
-function getFreeSlots() {
-  let nextSlot = nearestFutureMinutes(20, moment());
-  let freeSlots = [];
-  let time;
-
-  do {
-    nextSlot.add(20, 'minutes')
-    if (!getRunningMatch(nextSlot)) {
-      time = nextSlot.format('HH:mm');
-      freeSlots.push({
-        text: time + ' Uhr',
-        value: time
-      });
-    }
-  } while (nextSlot.isBefore(moment().endOf('day')))
-
-  return freeSlots;
-}
-
 function init() {
   app.listen(port, () => {
-    console.log(`App listening on port ${port}!`);
+    debug(`App listening on port ${port}!`);
   });
 }
