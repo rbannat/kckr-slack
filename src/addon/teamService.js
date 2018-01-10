@@ -1,8 +1,10 @@
 const fs = require('fs');
+const path = require('path');
+const config = require('../config');
 const Team = require('./model/Team');
 const UserService = require('./userService');
 
-const dbPath = './data/mySuperSecureTeamDb.json';
+const dbPath = config.db.teamDBPath;
 
 class TeamServiceModel {
   constructor() {
@@ -13,7 +15,7 @@ class TeamServiceModel {
   serializeDataFromDb(callback) {
     let self = this;
     let serializedTeams = {};
-    fs.readFile(dbPath, 'utf8', (error, data) => {
+    fs.readFile(path.join(__dirname, dbPath), (error, data) => {
       if(error) {
         throw new Error('fs.readfile in TeamService throws an error', error);
       }
@@ -22,7 +24,7 @@ class TeamServiceModel {
 
       for (let key in teams) {
         let currentTeam = teams[key];
-        serializedTeams[key] = new Team(currentTeam.name, currentTeam.location, currentTeam.rating, currentTeam.stats, currentTeam.member);
+        serializedTeams[key] = new Team(currentTeam.name, currentTeam.location, currentTeam.member, currentTeam.rating, currentTeam.stats);
       }
 
       self.teams = serializedTeams;
@@ -34,12 +36,13 @@ class TeamServiceModel {
     });
   }
 
-  static writeDb(data) {
-    fs.writeFile(dbPath, JSON.stringify(data), (error) => {
-      if(error !== null) {
+  writeDb() {
+    let data = JSON.stringify(this.teams);
+    fs.writeFile(path.join(__dirname, dbPath), data, (error) => {
+      if(error) {
         throw new Error('fs.writeFile in Teamservice throws an error', error);
       }
-    })
+    });
   }
 
   addTeam(name, location, member1, member2) {
@@ -48,11 +51,12 @@ class TeamServiceModel {
       data: {},
       message: ''
     };
-    if (typeof this.teams[name] === 'undefined') {
+    let team = this.teams[name] || this.teams[name.split('.').reverse().join('.')];
+    if (!team) {
       let teamMembers = [member1, member2];
-      let data = new Team(name, location, teamMembers);
+      let data = new Team(member1 + '.' + member2, location, teamMembers);
       this.teams[name] = data;
-      this.constructor.writeDb(this.teams);
+      this.writeDb();
 
       for(let i = 0; i < teamMembers.length; i++) {
         let m1 = UserService.getUser(teamMembers[i]);
@@ -68,14 +72,14 @@ class TeamServiceModel {
       response.status = 'success';
       response.message = 'Added a new team';
     } else {
-      response.data = this.teams[name];
-      response.message = 'Team already registered'
+      response.data = this.teams[team.name];
+      response.message = 'Team already registered';
     }
     return response;
   }
 
   getTeam(name) {
-    return this.teams[name];
+    return this.teams[name] || this.teams[name.split('.').reverse().join('.')];
   }
 
   getAllTeams() {
