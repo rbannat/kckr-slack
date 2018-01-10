@@ -29,7 +29,7 @@ const production = {
         verificationToken: process.env.SLACK_VERIFICATION_TOKEN,
         accessToken: process.env.SLACK_ACCESS_TOKEN,
         webhookUrl: process.env.SLACK_WEBHOOK_URL,
-        messageActionPath: process.env.DEV_SLACK_INTERACTIVE_MESSAGE_PATH
+        messageActionPath: process.env.SLACK_INTERACTIVE_MESSAGE_PATH
     },
     db: {
         teamDBPath: process.env.TEAM_DB_PATH,
