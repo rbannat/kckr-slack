@@ -39,7 +39,6 @@ class UserServiceModel {
   }
 
   writeDb() {
-    let self = this;
     if (this.initialized === true) {
       let data = JSON.stringify(this.users);
       fs.writeFile(path.join(__dirname, dbPath), data, (error) => {
