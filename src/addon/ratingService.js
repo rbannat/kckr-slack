@@ -13,7 +13,7 @@ class RatingServiceModel {
       throw new Error('Rating cannot be calculated');
     }
 
-    let difference = playerRating - opponentRating;
+    let difference = opponentRating - playerRating;
     let percentage = 1 / (1 + Math.pow(10, difference / 400));
 
     if(hasWon) {

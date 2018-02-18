@@ -149,7 +149,7 @@ class MatchServiceModel {
     let winner = match.getWinner();
     let loser = match.getLoser();
     let winnerRating = RatingService.getRatingChange(winner.rating, loser.rating, true);
-    let loserRating = RatingService.getRatingChange(winner.rating, loser.rating, false);
+    let loserRating = RatingService.getRatingChange(loser.rating, winner.rating, false);
     winner.addRating(winnerRating);
     loser.addRating(loserRating);
     if (winner.type === 'team') {
