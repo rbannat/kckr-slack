@@ -4,20 +4,15 @@ const debug = require('debug')('kickr');
 let matches = {};
 
 module.exports = {
-    getScores: function () {
-
-        let teamScores = 'Team Scores:\n';
-        teamScores += service.getTeamScores().slice(0, 9).map((team, index) => {
-            return '\n' + (index + 1) + '. ' + '<@' + team.member[0] + '> / ' + '<@' + team.member[1] + '> ' + team.rating;
-        });
-
-        let playerScores = 'Single Player Scores:\n';
-        playerScores += service.getPlayerScores().slice(0, 9).map((player, index) => {
+    getTeamScores: () => {
+        return service.getTeamScores().slice(0, 9).map((team, index) => {
+                return '\n' + (index + 1) + '. ' + '<@' + team.member[0] + '> / ' + '<@' + team.member[1] + '> ' + team.rating;
+            }).reduce((a, b) => a + b, [])
+    },
+    getSingleScores: () => {
+        return service.getPlayerScores().slice(0, 9).map((player, index) => {
             return '\n' + (index + 1) + '. ' + '<@' + player.name + '> ' + player.rating;
-        });
-        return {
-            text: teamScores + '\n \n' + playerScores
-        };
+        }).reduce((a, b)=> a + b, [])
     },
     getConfirmationMessage: function (players, score) {
         return {
@@ -85,6 +80,5 @@ module.exports = {
             party2: team1.name
         });
         debug(result);
-
     }
 };
