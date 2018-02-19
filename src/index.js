@@ -104,7 +104,19 @@ app.post('/commands', (req, res) => {
     }
 
     if (text === 'scores') {
-      return res.send(recordMatchHandler.getScores());
+      return res.send({
+        text: '',
+        attachments: [
+          {
+            title: 'Team Scores',
+            text: recordMatchHandler.getTeamScores()
+          },
+          {
+            title: 'Single Player Scores',
+            text: recordMatchHandler.getSingleScores()
+          }
+        ]
+      });
     }
 
     // default to table reservation
@@ -146,6 +158,16 @@ slackMessages.action('record_match', (payload, respond) => {
     recordMatchHandler.deleteMatch(payload.user.id);
     respond({
       text: 'Your match has been recorded!',
+      attachments: [
+        {
+          title: 'Team Scores',
+          text: recordMatchHandler.getTeamScores()
+        },
+        {
+          title: 'Single Player Scores',
+          text: recordMatchHandler.getSingleScores()
+        }
+      ]
     });
 
     return {

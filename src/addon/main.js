@@ -2,7 +2,6 @@ const UserService = require('./userService');
 const TeamService = require('./teamService');
 const RatingService = require('./ratingService');
 const MatchService = require('./matchService');
-const http = require('http');
 
 class Main {
   
