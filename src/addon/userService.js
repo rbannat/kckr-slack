@@ -1,8 +1,6 @@
-'use strict';
-
+const config = require('../config/default');
 const fs = require('fs');
 const path = require('path');
-const config = require('../config');
 const User = require('./model/User');
 
 const dbPath = config.db.userDBPath;

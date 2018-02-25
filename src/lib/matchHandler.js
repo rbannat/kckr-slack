@@ -1,5 +1,4 @@
-const service = require('./addon/main');
-const debug = require('debug')('kickr');
+const service = require('../addon/main');
 
 let matches = {};
 
@@ -12,7 +11,7 @@ module.exports = {
     getSingleScores: () => {
         return service.getPlayerScores().slice(0, 9).map((player, index) => {
             return '\n' + (index + 1) + '. ' + '<@' + player.name + '> ' + player.rating;
-        }).reduce((a, b)=> a + b, [])
+        }).reduce((a, b) => a + b, [])
     },
     getConfirmationMessage: function (players, score) {
         return {
@@ -64,21 +63,10 @@ module.exports = {
             team1 = service.register(match.players[0], 'Berlin', match.players[0]).data;
             team2 = service.register(match.players[1], 'Berlin', match.players[1]).data;
         }
-        debug(team1, team2, team1Name, team2Name);
-        debug(service.challenge('new', {
-            challenger: team1.name,
-            opponent: team2.name
-        }));
-        debug(service.challenge('enterResult', {
-            party: team1.name,
-            result: match.score[0] + ':' + match.score[1],
-            party2: team2.name
-        }));
-        let result = service.challenge('enterResult', {
+        service.challenge('enterResult', {
             party: team2.name,
             result: match.score[1] + ':' + match.score[0],
             party2: team1.name
         });
-        debug(result);
     }
 };

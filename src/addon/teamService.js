@@ -1,6 +1,6 @@
+const config = require('../config/default');
 const fs = require('fs');
 const path = require('path');
-const config = require('../config');
 const Team = require('./model/Team');
 const UserService = require('./userService');
 

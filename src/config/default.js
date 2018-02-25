@@ -13,6 +13,9 @@ const development = {
         webhookUrl: process.env.DEV_SLACK_WEBHOOK_URL,
         messageActionPath: process.env.DEV_SLACK_INTERACTIVE_MESSAGE_PATH
     },
+    kckr: {
+        socketUrl: 'http://localhost:8090'
+    },
     db: {
         teamDBPath: process.env.DEV_TEAM_DB_PATH,
         userDBPath: process.env.DEV_USER_DB_PATH
@@ -30,6 +33,9 @@ const production = {
         accessToken: process.env.SLACK_ACCESS_TOKEN,
         webhookUrl: process.env.SLACK_WEBHOOK_URL,
         messageActionPath: process.env.SLACK_INTERACTIVE_MESSAGE_PATH
+    },
+    kckr: {
+        socketUrl: 'http://kckr.io:8090'
     },
     db: {
         teamDBPath: process.env.TEAM_DB_PATH,
