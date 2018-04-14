@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const tokenizer = require('string-tokenizer');
+
 const router = express.Router();
 const helpers = require('../helpers');
 const reservationHandler = require('../lib/reservationHandler');
@@ -13,7 +14,7 @@ router.get('/', (req, res) => {
   );
 });
 
-module.exports = ({slackMessages, log, webhookUrl, verificationToken}) => {
+module.exports = ({ slackMessages, log, webhookUrl, verificationToken }) => {
   // Slack Interactive Messages
   slackMessages.action('match_actions', payload => {
     log.info('received match action: ', payload.actions[0]);
@@ -22,22 +23,21 @@ module.exports = ({slackMessages, log, webhookUrl, verificationToken}) => {
         payload.actions[0].value,
         payload.user.id
       );
-    } else {
-      return reservationHandler.joinMatch(
-        payload.actions[0].value,
-        payload.user.id,
-        payload.user.name
-      );
     }
-  });
-
-  slackMessages.action('select_times', payload => {
-    return reservationHandler.reserveMatch(
-      payload.actions[0].selected_options[0].value,
+    return reservationHandler.joinMatch(
+      payload.actions[0].value,
       payload.user.id,
       payload.user.name
     );
   });
+
+  slackMessages.action('select_times', payload =>
+    reservationHandler.reserveMatch(
+      payload.actions[0].selected_options[0].value,
+      payload.user.id,
+      payload.user.name
+    )
+  );
 
   slackMessages.action('record_match', (payload, respond) => {
     log.info('Incoming match confirmation', payload);
@@ -49,11 +49,11 @@ module.exports = ({slackMessages, log, webhookUrl, verificationToken}) => {
 
       axios.post(webhookUrl, {
         text:
-          match.players.length === 2 ?
-            `<@${payload.user.id}> recorded a match: <@${
+          match.players.length === 2
+            ? `<@${payload.user.id}> recorded a match: <@${
                 match.players[0]
-              }> vs <@${match.players[1]}> ${match.score.join(':')}` :
-            `<@${payload.user.id}> recorded a match: <@${
+              }> vs <@${match.players[1]}> ${match.score.join(':')}`
+            : `<@${payload.user.id}> recorded a match: <@${
                 match.players[0]
               }>, <@${match.players[1]}>  vs <@${match.players[2]}>, <@${
                 match.players[3]
@@ -78,11 +78,10 @@ module.exports = ({slackMessages, log, webhookUrl, verificationToken}) => {
       return {
         text: 'Waiting for match to be recorded ...'
       };
-    } else {
-      return {
-        text: 'Match recording cancelled.'
-      };
     }
+    return {
+      text: 'Match recording cancelled.'
+    };
   });
 
   /*
@@ -92,13 +91,15 @@ module.exports = ({slackMessages, log, webhookUrl, verificationToken}) => {
   router.post('/commands', (req, res) => {
     // extract the verification token, slash command text,
     // and trigger ID from payload
-    const {token, text, user_id} = req.body;
+    const { token, text, user_id: userId } = req.body;
     // check that the verification token matches expected value
     if (token === verificationToken) {
       if (text.startsWith('record')) {
         log.info('Incoming record slash command: ', req.body);
         // parse result
-        let message, players, score;
+        let message;
+        let players;
+        let score;
         try {
           const tokens = tokenizer()
             .input(text)
@@ -111,12 +112,12 @@ module.exports = ({slackMessages, log, webhookUrl, verificationToken}) => {
           players = [...new Set(helpers.arrayOrUndefined(tokens.players))];
           log.debug(`Unique player ids: ${players}`);
           if (players.length !== 2 && players.length !== 4) {
-            throw 'Count of players needs to be two or four';
+            throw new Error('Count of players needs to be two or four');
           }
           score = helpers
             .arrayOrUndefined(tokens.score)[0]
             .split(':')
-            .map(singleScore => parseInt(singleScore));
+            .map(singleScore => parseInt(singleScore, 10));
           log.debug(`Score: ${score}`);
           if (
             score.length !== 2 ||
@@ -127,7 +128,7 @@ module.exports = ({slackMessages, log, webhookUrl, verificationToken}) => {
             score[0] + score[1] > 3 ||
             score[0] + score[1] < 2
           ) {
-            throw 'Score is invalid';
+            throw new Error('Score is invalid');
           }
         } catch (error) {
           log.debug('Error parsing command: ', error);
@@ -137,7 +138,7 @@ module.exports = ({slackMessages, log, webhookUrl, verificationToken}) => {
           return res.send(message);
         }
         // temporarily save match for approval
-        matchHandler.storeMatch(user_id, players, score);
+        matchHandler.storeMatch(userId, players, score);
         message = matchHandler.getConfirmationMessage(players, score);
         return res.send(message);
       }
@@ -170,10 +171,9 @@ module.exports = ({slackMessages, log, webhookUrl, verificationToken}) => {
           req.body.user_name
         )
       );
-    } else {
-      log.error('Verification token mismatch');
-      res.sendStatus(500);
     }
+    log.error('Verification token mismatch');
+    return res.sendStatus(500);
   });
 
   return router;
