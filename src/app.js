@@ -15,8 +15,8 @@ const log = bunyan.createLogger({
 
 // load config
 const {
-  slack: {verificationToken, messageActionPath, webhookUrl},
-  kckr: {socketUrl}
+  slack: { verificationToken, messageActionPath, webhookUrl },
+  kckr: { socketUrl }
 } = config;
 
 const app = express();
@@ -40,10 +40,12 @@ const router = require('./controllers')({
   verificationToken,
   log
 });
+
 app.use('/', router);
 
 // Connect to kckr service
 const socket = require('socket.io-client')(socketUrl);
+
 socket.on('connect', () => log.info('App connected to kckr.io'));
 socket.on('event', data => log.info('event', data));
 socket.on('disconnect', () => log.info('App disconnected from kckr.io'));
