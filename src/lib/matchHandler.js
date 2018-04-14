@@ -63,7 +63,7 @@ module.exports = {
             team1 = service.register(match.players[0], 'Berlin', match.players[0]).data;
             team2 = service.register(match.players[1], 'Berlin', match.players[1]).data;
         }
-        service.challenge('enterResult', {
+        return service.challenge('enterResult', {
             party: team2.name,
             result: match.score[1] + ':' + match.score[0],
             party2: team1.name

@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 //   slackIncomingWebhook,
 //   slackWebClient
 // } = require('@slack/client');
+const serverless = require('serverless-http');
 const slackInteractiveMessages = require('@slack/interactive-messages');
 const bunyan = require('bunyan');
 
@@ -14,7 +15,6 @@ const log = bunyan.createLogger({
 
 // load config
 const {
-  app: {port},
   slack: {verificationToken, messageActionPath, webhookUrl},
   kckr: {socketUrl}
 } = config;
@@ -49,6 +49,8 @@ socket.on('event', data => log.info('event', data));
 socket.on('disconnect', () => log.info('App disconnected from kckr.io'));
 
 // Start server
-app.listen(port, () => {
-  log.info(`App listening on port ${port}!`);
-});
+// app.listen(port, () => {
+//   log.info(`App listening on port ${port}!`);
+// });
+
+module.exports.handler = serverless(app);
