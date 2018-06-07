@@ -1,10 +1,8 @@
-const moment = require('moment');
-
 let reservedMatches = [];
 const MAX_PLAYER = 4;
 
-module.exports = {
-  reserveMatch(timeString, userId, userName) {
+module.exports = ({ log, moment, slackMessages }) => {
+  const reserveMatch = (timeString, userId, userName) => {
     const time = timeString ? moment(timeString, 'HH:mm') : moment();
 
     if (timeString.length !== 0 && this.checkTimeString(timeString)) {
@@ -99,8 +97,8 @@ module.exports = {
         }
       ]
     };
-  },
-  getMatchList() {
+  };
+  const getMatchList = () => {
     if (!reservedMatches.length) {
       return {
         text: 'Keine Reservierungen für heute'
@@ -120,8 +118,9 @@ module.exports = {
     return {
       text: list
     };
-  },
-  cancelMatch(matchId, userId) {
+  };
+
+  const cancelMatch = (matchId, userId) => {
     const match = reservedMatches.find(
       reservedMatch => reservedMatch.id === matchId
     );
@@ -150,8 +149,9 @@ module.exports = {
       text: 'Du kannst nur Spiele absagen, die du selbst angelegt hast!',
       replace_original: false
     };
-  },
-  joinMatch(matchId, userId, userName) {
+  };
+
+  const joinMatch = (matchId, userId, userName) => {
     const match = reservedMatches.find(
       reservedMatch => parseInt(reservedMatch.id, 10) === parseInt(matchId, 10)
     );
@@ -226,11 +226,12 @@ module.exports = {
         .map(player => this.getUserObject(player))
         .join(', ')}`
     };
-  },
-  checkTimeString(timeString) {
-    return !/[0-2]?[0-9]:[0-5][0-9]/.test(timeString);
-  },
-  getRunningMatch(matchTime) {
+  };
+
+  const checkTimeString = timeString =>
+    !/[0-2]?[0-9]:[0-5][0-9]/.test(timeString);
+
+  const getRunningMatch = matchTime => {
     const requiredMatchTime = matchTime.format('x');
 
     return reservedMatches.find(match => {
@@ -240,8 +241,9 @@ module.exports = {
         .format('x');
       return requiredMatchTime >= matchStart && requiredMatchTime <= matchEnd;
     });
-  },
-  getFreeSlots() {
+  };
+
+  const getFreeSlots = () => {
     const nextSlot = this.nearestFutureMinutes(20, moment());
     const freeSlots = [];
     let time;
@@ -258,15 +260,45 @@ module.exports = {
     } while (nextSlot.isBefore(moment().endOf('day')));
 
     return freeSlots;
-  },
-  nearestFutureMinutes(interval, someMoment) {
+  };
+
+  const nearestFutureMinutes = (interval, someMoment) => {
     const roundedMinutes = Math.ceil(someMoment.minute() / interval) * interval;
     return someMoment
       .clone()
       .minute(roundedMinutes)
       .second(0);
-  },
-  getUserObject(user) {
-    return `<@${user.userId}|${user.userName}>`;
-  }
+  };
+
+  const getUserObject = user => `<@${user.userId}|${user.userName}>`;
+
+  // Slack Interactive Messages
+  slackMessages.action('match_actions', payload => {
+    log.info('received match action: ', payload.actions[0]);
+    if (payload.actions[0].name === 'cancel') {
+      return cancelMatch(payload.actions[0].value, payload.user.id);
+    }
+    return joinMatch(
+      payload.actions[0].value,
+      payload.user.id,
+      payload.user.name
+    );
+  });
+
+  slackMessages.action('select_times', payload =>
+    reserveMatch(
+      payload.actions[0].selected_options[0].value,
+      payload.user.id,
+      payload.user.name
+    )
+  );
+
+  return {
+    getMatchList,
+    checkTimeString,
+    getRunningMatch,
+    getFreeSlots,
+    nearestFutureMinutes,
+    getUserObject
+  };
 };

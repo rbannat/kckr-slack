@@ -6,7 +6,7 @@
 1. `touch .env`
 1. edit `.env` file
 1. `npm start`
-1. go to <http://localhost:4390>
+1. go to <http://localhost:PORT>
 
 ## .env settings
 

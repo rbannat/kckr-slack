@@ -1,28 +1,26 @@
 class RatingServiceModel {
   constructor() {
-    this._initialRating = 1500;
+    this.initialRating = 1500;
     this.KFactor = 32;
   }
 
   getInitialRating() {
-    return this._initialRating;
+    return this.initialRating;
   }
 
   getRatingChange(playerRating, opponentRating, hasWon) {
-    if(typeof hasWon === 'undefined') {
+    if (typeof hasWon === 'undefined') {
       throw new Error('Rating cannot be calculated');
     }
 
-    let difference = opponentRating - playerRating;
-    let percentage = 1 / (1 + Math.pow(10, difference / 400));
+    const difference = opponentRating - playerRating;
+    const percentage = 1 / (1 + 10 ** (difference / 400));
 
-    if(hasWon) {
+    if (hasWon) {
       return Math.round(this.KFactor * (1 - percentage));
-    } else {
-      return Math.round(this.KFactor * (0 - percentage))
     }
+    return Math.round(this.KFactor * (0 - percentage));
   }
-
 }
 
 const RatingService = new RatingServiceModel();
