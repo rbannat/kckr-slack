@@ -15,7 +15,10 @@ module.exports = ({
   verificationToken,
   helpers,
   reservationHandler,
+  messageHelper,
   matchHandler,
+  playerHandler,
+  teamHandler,
   http
 }) => {
   /** Middleware to verify slack verification token */
@@ -35,8 +38,8 @@ module.exports = ({
    * Endpoint to receive slash commands from Slack.
    * Checks verification token before parsing the command.
    */
-  router.post('/commands', verifySlack, (req, res) => {
-    log.info('Incoming slash command: ', req.body);
+  router.post('/commands', verifySlack, async (req, res) => {
+    log.info('Incoming slash command: ', req.body.text);
 
     const {
       text,
@@ -83,6 +86,8 @@ module.exports = ({
         ) {
           throw new Error('Score is invalid');
         }
+        // early return
+        res.send();
       } catch (err) {
         log.error('Error parsing command: ', err);
         message = {
@@ -90,29 +95,46 @@ module.exports = ({
         };
         return res.send(message);
       }
-
-      // TODO: early return 200 for > 3 seconds
-
-      return matchHandler
-        .saveMatch({
-          slackTeamId,
-          slackUserId,
-          players,
-          score
-        })
-        .then(match => matchHandler.getConfirmationMessage(match))
-        .then(confirmationMessage =>
-          http.post(responseUrl, confirmationMessage)
-        )
-        .then(() => {
-          res.send();
-        })
-        .catch(err => {
-          log.error(err);
-          return http.post(responseUrl, {
-            text: 'Argh, could not create match.'
-          });
+      // create players and teams if not exist and create match
+      // TODO: later start account binding process
+      try {
+        const playerIds = await playerHandler.savePlayers({
+          slackUserIds: players,
+          slackTeamId
         });
+        const createdBy = await playerHandler.getPlayerBySlackId({
+          slackTeamId,
+          slackUserId
+        });
+        let teamIds = playerIds;
+        let mode = '1vs1';
+        if (playerIds.length === 4) {
+          mode = '2vs2';
+          teamIds = await teamHandler.saveTeams({
+            playerIds,
+            slackTeamId
+          });
+        }
+        const match = await matchHandler.saveMatch({
+          slackTeamId,
+          createdBy: createdBy.id,
+          teamIds,
+          mode,
+          score
+        });
+        return http.post(
+          responseUrl,
+          messageHelper.getConfirmationMessage({
+            match,
+            slackUserIds: players
+          })
+        );
+      } catch (err) {
+        log.error(err);
+        return http.post(responseUrl, {
+          text: 'Argh, could not create match.'
+        });
+      }
     }
 
     if (text === 'list') {

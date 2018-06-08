@@ -30,19 +30,18 @@ const slackMessages = slackInteractiveMessages.createMessageAdapter(
   verificationToken
 );
 const http = axios.create();
-const service = require('./addon/main');
-const matchModel = require('./db/match.model')();
-const userModel = require('./db/user.model')({ log });
-const teamModel = require('./db/team.model')();
-const users = require('./lib/users')({ log, userModel });
+const helpers = require('./lib/helpers');
+const messageHelper = require('./lib/messageHelper');
+const matchModel = require('./db/models/match');
+const playerModel = require('./db/models/player');
+const teamModel = require('./db/models/team');
+const playerHandler = require('./lib/playerHandler')({ playerModel });
+const teamHandler = require('./lib/teamHandler')({ teamModel });
 const matchHandler = require('./lib/matchHandler')({
   log,
   matchModel,
-  service,
-  users,
-  axios,
   webhookUrl,
-  slackMessages,
+  messageHelper,
   http
 });
 const reservationHandler = require('./lib/reservationHandler')({
@@ -50,8 +49,16 @@ const reservationHandler = require('./lib/reservationHandler')({
   slackMessages,
   moment
 });
-const helpers = require('./lib/helpers');
-
+require('./lib/messageHandler')({
+  log,
+  matchModel,
+  playerModel,
+  teamModel,
+  webhookUrl,
+  slackMessages,
+  messageHelper,
+  http
+});
 // create app
 const app = express();
 
@@ -73,6 +80,9 @@ const router = require('./router')({
   helpers,
   matchHandler,
   reservationHandler,
+  playerHandler,
+  teamHandler,
+  messageHelper,
   http
 });
 
@@ -100,3 +110,15 @@ db
   .catch(() => {
     log.error('Error connecting to DB');
   });
+
+process.on('SIGINT', () => {
+  db
+    .closeConnection()
+    .then(() => {
+      log.info('Db connection is disconnected due to application termination');
+      process.exit(0);
+    })
+    .catch(err => {
+      log.error('Could not disconnect from db', err);
+    });
+});

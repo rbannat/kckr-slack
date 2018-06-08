@@ -1,22 +1,7 @@
 const mongoose = require('mongoose');
 
 module.exports = () => {
-  const connect = uri =>
-    new Promise((resolve, reject) => {
-      mongoose.connect(uri);
-
-      const db = mongoose.connection;
-
-      db.on('error', err => {
-        reject(err);
-      });
-
-      db.once('open', () => {
-        resolve();
-      });
-    });
-
-  return {
-    connect
-  };
+  const connect = uri => mongoose.connect(uri);
+  const closeConnection = () => mongoose.connection.close();
+  return { connect, closeConnection };
 };
