@@ -1,7 +1,5 @@
-const createConfirmationMessage = ({ playersText, match }) => ({
-  text: `Confirm match results ${playersText} ${match.winnerScore} : ${
-    match.loserScore
-  } ?`,
+const createConfirmationMessage = ({ resultText, matchId }) => ({
+  text: `Confirm match results ${resultText} ?`,
   attachments: [
     {
       fallback: 'You are unable to confirm match',
@@ -9,14 +7,14 @@ const createConfirmationMessage = ({ playersText, match }) => ({
       actions: [
         {
           name: 'confirm',
-          value: `confirm_${match.id}`,
+          value: `confirm_${matchId}`,
           text: 'Confirm',
           type: 'button',
           style: 'primary'
         },
         {
           name: 'cancel',
-          value: `cancel_${match.id}`,
+          value: `cancel_${matchId}`,
           text: 'Cancel',
           type: 'button',
           style: 'danger'
@@ -28,38 +26,36 @@ const createConfirmationMessage = ({ playersText, match }) => ({
 
 const createMatchRecordNotificationMessage = ({
   createdBySlackUserId,
-  playersText,
-  match
+  resultText
 }) => ({
-  text: `<@${createdBySlackUserId}> recorded a match: ${playersText} ${
-    match.winnerScore
-  } : ${match.loserScore}`
+  text: `<@${createdBySlackUserId}> recorded a match: ${resultText}`
 });
 
-const getPlayersText = ({ slackUserIds }) => {
+const getResultText = ({ slackUserIds, score }) => {
   if (slackUserIds.length === 4) {
     return `<@${slackUserIds[0]}>, <@${slackUserIds[1]}> vs <@${
       slackUserIds[2]
-    }>, <@${slackUserIds[3]}>`;
+    }>, <@${slackUserIds[3]}> ${score[0]} : ${score[1]}`;
   }
-  return `<@${slackUserIds[0]}> vs <@${slackUserIds[1]}>`;
+  return `<@${slackUserIds[0]}> vs <@${slackUserIds[1]}> ${score[0]} : ${
+    score[1]
+  }`;
 };
 
-const getConfirmationMessage = ({ match, slackUserIds }) =>
+const getConfirmationMessage = ({ slackUserIds, score, matchId }) =>
   createConfirmationMessage({
-    playersText: getPlayersText({ slackUserIds }),
-    match
+    resultText: getResultText({ slackUserIds, score }),
+    matchId
   });
 
 const getMatchRecordNotificationMessage = ({
   createdBySlackUserId,
-  match,
-  slackUserIds
+  slackUserIds,
+  score
 }) =>
   createMatchRecordNotificationMessage({
     createdBySlackUserId,
-    playersText: getPlayersText({ slackUserIds }),
-    match
+    resultText: getResultText({ slackUserIds, score })
   });
 
 module.exports = {

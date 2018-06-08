@@ -14,7 +14,7 @@ module.exports = ({
   log,
   verificationToken,
   helpers,
-  reservationHandler,
+  // reservationHandler,
   messageHelper,
   matchHandler,
   playerHandler,
@@ -125,8 +125,9 @@ module.exports = ({
         return http.post(
           responseUrl,
           messageHelper.getConfirmationMessage({
-            match,
-            slackUserIds: players
+            slackUserIds: players,
+            score,
+            matchId: match.id
           })
         );
       } catch (err) {
@@ -137,25 +138,25 @@ module.exports = ({
       }
     }
 
-    if (text === 'list') {
-      return res.send(reservationHandler.getMatchList());
-    }
+    // if (text === 'list') {
+    //   return res.send(reservationHandler.getMatchList());
+    // }
 
-    if (text === 'scores') {
-      return res.send({
-        text: '',
-        attachments: [
-          {
-            title: 'Team Scores',
-            text: matchHandler.getTeamScores()
-          },
-          {
-            title: 'Single Player Scores',
-            text: matchHandler.getSingleScores()
-          }
-        ]
-      });
-    }
+    // if (text === 'scores') {
+    //   return res.send({
+    //     text: '',
+    //     attachments: [
+    //       {
+    //         title: 'Team Scores',
+    //         text: matchHandler.getTeamScores()
+    //       },
+    //       {
+    //         title: 'Single Player Scores',
+    //         text: matchHandler.getSingleScores()
+    //       }
+    //     ]
+    //   });
+    // }
 
     // TODO: default to help
     // if (!text.trim()) {

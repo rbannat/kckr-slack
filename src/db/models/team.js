@@ -11,7 +11,8 @@ const TeamSchema = new Schema(
   {
     slackTeamId: { type: String, required: true },
     player1: { type: ObjectId, ref: 'Player', required: true },
-    player2: { type: ObjectId, ref: 'Player', required: true }
+    player2: { type: ObjectId, ref: 'Player', required: true },
+    rating: { type: Number, default: 1500 }
   },
   {
     timestamps: true
@@ -32,11 +33,11 @@ module.exports = {
           ]
         },
         { slackTeamId, player1: player1Id, player2: player2Id },
-        { upsert: true, new: true }
+        { upsert: true, new: true, setDefaultsOnInsert: true }
       )
       .populate('player1')
       .populate('player2'),
-  findById: ({ id }) =>
+  findById: id =>
     m
       .findById(id)
       .populate('player1')
