@@ -1,20 +1,26 @@
-# Kickr
+# Kckr Slack App
 
 ## Get Started
 
-1. `npm install`
-1. `touch .env`
-1. edit `.env` file
-1. `npm start`
-1. go to <http://localhost:4390>
+1.  `npm install`
+1.  `mv .env-example .env`
+1.  edit `.env` file
+1.  start local mongodb with `mongod`
+1.  `npm run watch`
 
-## .env settings
+## Requirements
 
-```bash
-CLIENT_ID=<CLIENT_ID>
-CLIENT_SECRET=<CLIENT_SECRET>
-WEBHOOK_URL=<WEBHOOK_URL>
-PORT=<PORT>
-SLACK_VERIFICATION_TOKEN=<SLACK_VERIFICATION_TOKEN>
-SLACK_ACCESS_TOKEN=<SLACK_ACCESS_TOKEN>
-```
+1.  Create a new Slack app: https://api.slack.com/apps
+1.  Configure the app with the following features:
+    * Incoming Webhooks
+    * Interactive Components
+    * Slash commands
+
+## Local development
+
+Use [ngrok](https://ngrok.com/) to test the slack integration locally via tunnel to localhost, e.g.:
+`ngrok http 4000`. Just fill in the app configuration with the generated URL.
+
+## Deployment
+
+Deploy the app on [Heroku](https://devcenter.heroku.com/) with the given Procfile.

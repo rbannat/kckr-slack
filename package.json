@@ -4,30 +4,42 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
-    "@slack/client": "^3.15.0",
-    "@slack/interactive-messages": "^0.2.0",
-    "axios": "^0.17.1",
-    "body-parser": "^1.17.2",
-    "debug": "^3.1.0",
-    "dotenv": "^4.0.0",
-    "express": "^4.15.3",
-    "moment": "^2.18.1",
-    "querystring": "^0.2.0"
-  },
-  "devDependencies": {
-    "nodemon": "^1.12.1",
+    "@slack/client": "^4.3.1",
+    "@slack/interactive-messages": "^0.4.0",
+    "axios": "^0.18.0",
+    "body-parser": "^1.18.3",
+    "bunyan": "^1.8.12",
+    "dotenv": "^6.0.0",
+    "express": "^4.16.3",
+    "moment": "^2.22.2",
+    "mongoose": "^5.1.4",
+    "querystring": "^0.2.0",
+    "socket.io-client": "^2.1.1",
     "string-tokenizer": "0.0.8"
   },
+  "devDependencies": {
+    "eslint": "^4.19.1",
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-config-prettier": "^2.9.0",
+    "eslint-plugin-import": "2.12.0",
+    "eslint-plugin-prettier": "^2.6.0",
+    "nodemon": "^1.17.5",
+    "prettier": "1.13.5"
+  },
   "scripts": {
-    "start": "NODE_ENV=production node ./src/index.js",
-    "start:dev": "DEBUG=kickr nodemon ./src/index.js",
+    "start": "node src/index.js",
+    "watch": "nodemon --watch src src/index.js | bunyan",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "René Bannat",
   "license": "ISC",
   "nodemonConfig": {
     "ignore": [
       "src/addon/data/*"
     ]
+  },
+  "engines": {
+    "node": "9.7.1",
+    "npm": "6.0.1"
   }
 }
