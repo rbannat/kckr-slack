@@ -125,8 +125,9 @@ module.exports = ({
         return http.post(
           responseUrl,
           messageHelper.getConfirmationMessage({
-            match,
-            slackUserIds: players
+            slackUserIds: players,
+            score,
+            matchId: match.id
           })
         );
       } catch (err) {
