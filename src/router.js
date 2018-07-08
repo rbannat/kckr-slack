@@ -24,7 +24,6 @@ module.exports = ({
   /** Middleware to verify slack verification token */
   function verifySlack(req, res, next) {
     // Assumes this application is is not distributed and can only be installed on one team.
-    // If this assumption does not hold true, then we would modify this code as well as
     // the data model to store individual team IDs, verification tokens, and access tokens.
     if (req.body.token === verificationToken) {
       next();
@@ -142,7 +141,7 @@ module.exports = ({
     //   return res.send(reservationHandler.getMatchList());
     // }
 
-    if (text === 'scores') {
+    if (text === 'rankings') {
       // early return
       res.send();
       const playerScoresText = await playerHandler.getPlayerScores();
@@ -151,20 +150,48 @@ module.exports = ({
         text: '',
         attachments: [
           {
-            title: 'Team Scores',
-            text: teamScoresText
-          },
-          {
-            title: 'Single Player Scores',
-            text: playerScoresText
+            fields: [
+              {
+                title: 'Single Player Scores',
+                value: playerScoresText,
+                short: true
+              },
+              {
+                title: 'Team Scores',
+                value: teamScoresText,
+                short: true
+              }
+            ]
           }
         ]
       });
     }
 
-    // TODO: default to help
-    // if (!text.trim()) {
-    // }
+    if (!text.trim() || text === 'help') {
+      return res.send({
+        text: 'Use the following commands to interact with the Kckr API:',
+        attachments: [
+          {
+            mrkdwn_in: ['fields'],
+            fields: [
+              {
+                title: '`/kckr help`',
+                value: 'Lists all available commands.'
+              },
+              {
+                title: '`/kckr record [players] [score]`',
+                value:
+                  'Records a game. \ne.g. `/kckr record @user1 @user2 @user3 @user3 2:1`'
+              },
+              {
+                title: '`/kckr rankings`',
+                value: 'Shows the current leaderboard.'
+              }
+            ]
+          }
+        ]
+      });
+    }
     return res.sendStatus(404);
   });
 

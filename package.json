@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rbannat/kckr-slack.git"
+  },
   "dependencies": {
     "@slack/client": "^4.3.1",
     "@slack/interactive-messages": "^0.4.0",
@@ -12,19 +16,19 @@
     "dotenv": "^6.0.0",
     "express": "^4.16.3",
     "moment": "^2.22.2",
-    "mongoose": "^5.1.4",
+    "mongoose": "^5.2.1",
     "querystring": "^0.2.0",
     "socket.io-client": "^2.1.1",
     "string-tokenizer": "0.0.8"
   },
   "devDependencies": {
-    "eslint": "^4.19.1",
-    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint": "^5.0.1",
+    "eslint-config-airbnb-base": "^13.0.0",
     "eslint-config-prettier": "^2.9.0",
-    "eslint-plugin-import": "2.12.0",
-    "eslint-plugin-prettier": "^2.6.0",
+    "eslint-plugin-import": "^2.13.0",
+    "eslint-plugin-prettier": "^2.6.2",
     "nodemon": "^1.17.5",
-    "prettier": "1.13.5"
+    "prettier": "^1.13.7"
   },
   "scripts": {
     "start": "node src/index.js",
