@@ -25,5 +25,6 @@ module.exports = {
   findOne: query => m.findOne(query),
   findById: id => m.findById(id),
   findByIdAndUpdate: ({ id, data }) =>
-    m.findByIdAndUpdate(id, data, { new: true })
+    m.findByIdAndUpdate(id, data, { new: true }),
+  findByRating: () => m.find({}, {}, { sort: { rating: -1 }, limit: 10 })
 };

@@ -41,5 +41,10 @@ module.exports = {
     m
       .findById(id)
       .populate('player1')
+      .populate('player2'),
+  findByRating: () =>
+    m
+      .find({}, {}, { sort: { rating: -1 }, limit: 10 })
+      .populate('player1')
       .populate('player2')
 };

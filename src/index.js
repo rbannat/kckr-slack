@@ -96,8 +96,7 @@ app.use('/', router);
 // socket.on('disconnect', () => log.info('App disconnected from kckr.io'));
 
 // connect to db and start server
-db
-  .connect(dbUri)
+db.connect(dbUri)
   .then(() => {
     log.info('Connected to db!');
     // Start server
@@ -112,8 +111,7 @@ db
   });
 
 process.on('SIGINT', () => {
-  db
-    .closeConnection()
+  db.closeConnection()
     .then(() => {
       log.info('Db connection is disconnected due to application termination');
       process.exit(0);

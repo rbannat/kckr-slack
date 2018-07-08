@@ -23,7 +23,21 @@ module.exports = ({ teamModel }) => {
     }
     return playerIds;
   };
+
+  const getTeamScores = async () => {
+    const teams = await teamModel.findByRating();
+    return teams
+      .map(
+        (team, index) =>
+          `\n${index + 1}. ` +
+          `<@${team.player1.slackUserId}> / ` +
+          `<@${team.player2.slackUserId}> ${team.rating}`
+      )
+      .reduce((a, b) => a + b, []);
+  };
+
   return {
-    saveTeams
+    saveTeams,
+    getTeamScores
   };
 };

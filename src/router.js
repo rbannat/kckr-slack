@@ -142,21 +142,25 @@ module.exports = ({
     //   return res.send(reservationHandler.getMatchList());
     // }
 
-    // if (text === 'scores') {
-    //   return res.send({
-    //     text: '',
-    //     attachments: [
-    //       {
-    //         title: 'Team Scores',
-    //         text: matchHandler.getTeamScores()
-    //       },
-    //       {
-    //         title: 'Single Player Scores',
-    //         text: matchHandler.getSingleScores()
-    //       }
-    //     ]
-    //   });
-    // }
+    if (text === 'scores') {
+      // early return
+      res.send();
+      const playerScoresText = await playerHandler.getPlayerScores();
+      const teamScoresText = await teamHandler.getTeamScores();
+      return http.post(responseUrl, {
+        text: '',
+        attachments: [
+          {
+            title: 'Team Scores',
+            text: teamScoresText
+          },
+          {
+            title: 'Single Player Scores',
+            text: playerScoresText
+          }
+        ]
+      });
+    }
 
     // TODO: default to help
     // if (!text.trim()) {

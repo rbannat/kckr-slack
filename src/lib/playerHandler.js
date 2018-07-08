@@ -12,8 +12,20 @@ module.exports = ({ playerModel }) => {
 
   const getPlayerBySlackId = ({ slackTeamId, slackUserId }) =>
     playerModel.findOne({ slackTeamId, slackUserId });
+
+  const getPlayerScores = async () => {
+    const players = await playerModel.findByRating();
+    return players
+      .map(
+        (player, index) =>
+          `\n${index + 1}. <@${player.slackUserId}> ${player.rating}`
+      )
+      .reduce((a, b) => a + b, []);
+  };
+
   return {
     savePlayers,
-    getPlayerBySlackId
+    getPlayerBySlackId,
+    getPlayerScores
   };
 };
