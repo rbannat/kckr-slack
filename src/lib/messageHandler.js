@@ -90,7 +90,7 @@ module.exports = ({
           rating: getNewRating({
             playerRating: team.rating,
             opponentRating: index === 0 ? teams[1].rating : teams[0].rating,
-            won: team === winner
+            won: team.id.toString() === winner.toString()
           })
         });
         return team.save();
